@@ -1,9 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
 import { Sun, Moon, Sparkles, History } from 'lucide-react';
-import { Button } from '../components/ui/button';
 
 export default function Home() {
   return (
@@ -42,7 +40,7 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Link to={createPageUrl('DailyCard')}>
+            <Link to="/daily-card">
               <div className="group h-full bg-gradient-to-br from-amber-400/10 to-orange-500/10 backdrop-blur-sm border-2 border-amber-400/30 rounded-2xl p-8 hover:border-amber-400 transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/20 cursor-pointer">
                 <div className="flex flex-col items-center text-center h-full justify-between">
                   <div>
@@ -72,7 +70,7 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <Link to={createPageUrl('ThreeCardsReading')}>
+            <Link to="/three-cards-reading">
               <div className="group h-full bg-gradient-to-br from-purple-500/10 to-violet-600/10 backdrop-blur-sm border-2 border-purple-400/30 rounded-2xl p-8 hover:border-purple-400 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20 cursor-pointer">
                 <div className="flex flex-col items-center text-center h-full justify-between">
                   <div>
@@ -104,14 +102,11 @@ export default function Home() {
           transition={{ delay: 0.4 }}
           className="text-center"
         >
-          <Link to={createPageUrl('ReadingHistory')}>
-            <Button 
-              variant="outline" 
-              className="bg-white/5 border-purple-400/30 text-purple-200 hover:bg-white/10 hover:text-white hover:border-purple-400"
-            >
+          <Link to="/reading-history">
+            <button className="inline-flex items-center bg-white/5 border border-purple-400/30 text-purple-200 hover:bg-white/10 hover:text-white hover:border-purple-400 px-6 py-3 rounded-lg font-medium transition-all">
               <History className="w-4 h-4 mr-2" />
               Ver Histórico de Leituras
-            </Button>
+            </button>
           </Link>
         </motion.div>
 
