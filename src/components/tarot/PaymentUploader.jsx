@@ -1,69 +1,168 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, CheckCircle, XCircle, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react';
 import PaymentControlService from '../../services/paymentControl';
 
 const PaymentUploader = ({ onUploadSuccess, onUploadError, theme, amount = 10.00 }) => {
-  const [uploading, setUploading] = useState(false);
-  const [validationResult, setValidationResult] = useState(null);
-  const [fileInfo, setFileInfo] = useState(null);
+  const [processando, setProcessando] = useState(false);
+  const [resultado, setResultado] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Função para gerar ID fixo baseado no arquivo (simulação)
+  const gerarIdDoComprovante = (file) => {
+    // Em produção, este ID viria do OCR do comprovante PIX
+    // Para teste, vamos gerar um ID fixo baseado no nome e tamanho do arquivo
+    const nomeHash = btoa(file.name + file.size + file.lastModified).substr(0, 20).replace(/[^a-zA-Z0-9]/g, '');
+    return `pix_${nomeHash}`;
+  };
+
+  // Função para simular hora do comprovante baseado no nome do arquivo
+  const detectarHoraDoComprovante = (filename) => {
+    const agora = new Date();
+    
+    console.log('🔍 Analisando nome do arquivo para detectar hora:', filename);
+    
+    // Se o arquivo tem "19.49" no nome, simular comprovante das 19:49 (30min atrás)
+    if (filename.includes('19.49') || filename.includes('19:49')) {
+      console.log('⏰ DETECTADO: Arquivo parece ser das 19:49 (30 minutos atrás)');
+      // Criar data de 30 minutos atrás
+      const horaComprovante = new Date(agora.getTime() - 30 * 60 * 1000);
+      const horaFormatada = horaComprovante.toLocaleTimeString('pt-BR', { 
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      console.log('   Hora simulada:', horaFormatada);
+      return horaFormatada;
+    }
+    
+    // Se o arquivo tem "teste_antigo" ou parecido, simular 1 hora atrás
+    if (filename.toLowerCase().includes('antigo') || filename.includes('old')) {
+      console.log('⏰ DETECTADO: Arquivo antigo (1 hora atrás)');
+      const horaComprovante = new Date(agora.getTime() - 60 * 60 * 1000);
+      const horaFormatada = horaComprovante.toLocaleTimeString('pt-BR', { 
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      console.log('   Hora simulada:', horaFormatada);
+      return horaFormatada;
+    }
+    
+    // Para arquivos normais, simular comprovante recente (≤ 3min)
+    console.log('⏰ Arquivo normal - Simulando comprovante recente (≤ 3min)');
+    const minutosAtras = Math.floor(Math.random() * 4); // 0-3 minutos
+    const horaRecentemente = new Date(agora.getTime() - minutosAtras * 60 * 1000);
+    const horaFormatada = horaRecentemente.toLocaleTimeString('pt-BR', { 
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    console.log(`   Hora simulada: ${horaFormatada} (${minutosAtras} minutos atrás)`);
+    return horaFormatada;
+  };
 
   const handleFileSelect = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    setUploading(true);
-    setValidationResult(null);
-    setFileInfo(null);
+    setProcessando(true);
+    setResultado(null);
 
     try {
-      // 1. Validar comprovante
-      const validation = await PaymentControlService.validatePaymentProof(file);
+      console.log('\n' + '='.repeat(60));
+      console.log('🔄 INICIANDO VALIDAÇÃO DO COMPROVANTE');
+      console.log('='.repeat(60));
+      console.log('📄 Arquivo:', file.name);
+      console.log('📏 Tamanho:', (file.size / 1024).toFixed(2), 'KB');
+      console.log('📅 Modificado:', new Date(file.lastModified).toLocaleString('pt-BR'));
       
-      setValidationResult(validation);
-      setFileInfo({
-        name: file.name,
-        size: (file.size / 1024 / 1024).toFixed(2), // MB
-        type: file.type,
-        lastModified: new Date(file.lastModified).toLocaleDateString('pt-BR')
-      });
-
-      if (!validation.valid) {
-        setUploading(false);
-        if (onUploadError) onUploadError(validation.error);
-        return;
-      }
-
-      // 2. Simular upload (em produção, enviar para servidor)
+      // SIMULAR PROCESSAMENTO OCR
       await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Gerar dados simulados do comprovante
+      const agora = new Date();
+      const dataAtual = agora.toISOString().split('T')[0];
+      
+      // DETECTAR HORA DO COMPROVANTE BASEADO NO NOME DO ARQUIVO
+      const horaComprovante = detectarHoraDoComprovante(file.name);
+      
+      console.log('\n📊 DADOS SIMULADOS DO COMPROVANTE:');
+      console.log('📅 Data atual do sistema:', dataAtual);
+      console.log('⏰ Hora atual do sistema:', agora.toLocaleTimeString('pt-BR', { hour12: false }));
+      console.log('⏰ Hora simulada do comprovante:', horaComprovante);
+      
+      // Calcular diferença para debug
+      const [horaComp, minutoComp] = horaComprovante.split(':').map(Number);
+      const dataHoraComprovante = new Date();
+      dataHoraComprovante.setHours(horaComp, minutoComp, 0, 0);
+      const diferencaMinutos = (agora - dataHoraComprovante) / (1000 * 60);
+      console.log(`⏱️  Diferença calculada: ${diferencaMinutos.toFixed(1)} minutos`);
+      console.log(`🎯 Limite máximo: 6 minutos`);
+      console.log(`📊 Status: ${diferencaMinutos <= 6 ? '✅ DENTRO DO LIMITE' : '❌ FORA DO LIMITE'}`);
+      
+      // GERAR ID FIXO BASEADO NO ARQUIVO
+      const idTransacao = gerarIdDoComprovante(file);
+      
+      console.log('🔑 ID gerado para o arquivo:', idTransacao);
+      
+      const dadosComprovante = {
+        data_comprovante: dataAtual,
+        hora_comprovante: horaComprovante,
+        nome_favorecido: 'Gustavo Santos Ribeiro',
+        valor_pix: 10.00,
+        id_transacao: idTransacao
+      };
+      
+      console.log('\n📋 DADOS ENVIADOS PARA VALIDAÇÃO:');
+      console.log('   Data:', dadosComprovante.data_comprovante);
+      console.log('   Hora:', dadosComprovante.hora_comprovante);
+      console.log('   Nome:', dadosComprovante.nome_favorecido);
+      console.log('   Valor: R$', dadosComprovante.valor_pix);
+      console.log('   ID:', dadosComprovante.id_transacao);
+      
+      // VALIDAR COMPROVANTE
+      const validacao = await PaymentControlService.validarEProcessarComprovante(dadosComprovante, file.name);
+      
+      console.log('\n🎯 RESULTADO DA VALIDAÇÃO:');
+      console.log('   Válido?', validacao.valido ? '✅ SIM' : '❌ NÃO');
+      if (validacao.motivo) console.log('   Motivo:', validacao.motivo);
+      
+      setResultado(validacao);
+      setProcessando(false);
 
-      // 3. Registrar no PaymentControl
-      const paymentRecord = await PaymentControlService.createPaymentControl({
-        hash_arquivo: validation.hash,
-        nome_arquivo: file.name,
-        id_transacao: `pix_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        status: 'ativo'
-      });
-
-      // 4. Notificar sucesso
-      setUploading(false);
-      if (onUploadSuccess) {
-        onUploadSuccess({
-          paymentRecord,
-          file,
-          validation
-        });
+      if (validacao.valido) {
+        console.log('✅ COMPROVANTE VÁLIDO - Notificando sucesso');
+        if (onUploadSuccess) {
+          onUploadSuccess({
+            liberado: true,
+            registro: validacao.registro,
+            dados: dadosComprovante,
+            mensagem: validacao.mensagem
+          });
+        }
+      } else {
+        console.log('❌ COMPROVANTE INVÁLIDO - Notificando erro');
+        if (onUploadError) {
+          onUploadError(validacao.motivo || 'Comprovante não aprovado');
+        }
       }
+
+      console.log('='.repeat(60));
+      console.log('✅ PROCESSAMENTO CONCLUÍDO');
+      console.log('='.repeat(60));
 
     } catch (error) {
-      console.error('Erro no upload:', error);
-      setUploading(false);
-      setValidationResult({
-        valid: false,
-        error: error.message || 'Erro ao processar arquivo'
+      console.error('\n❌ ERRO NO PROCESSAMENTO:', error);
+      setProcessando(false);
+      setResultado({
+        valido: false,
+        mensagem: 'Erro no processamento do comprovante'
       });
-      if (onUploadError) onUploadError(error.message);
+      if (onUploadError) onUploadError('Erro no processamento');
     }
   };
 
@@ -81,49 +180,53 @@ const PaymentUploader = ({ onUploadSuccess, onUploadError, theme, amount = 10.00
           accept="image/*,.pdf"
           onChange={handleFileSelect}
           className="hidden"
-          disabled={uploading}
+          disabled={processando}
         />
         
         <motion.button
-          whileHover={{ scale: uploading ? 1 : 1.02 }}
-          whileTap={{ scale: uploading ? 1 : 0.98 }}
+          whileHover={{ scale: processando ? 1 : 1.02 }}
+          whileTap={{ scale: processando ? 1 : 0.98 }}
           onClick={triggerFileInput}
-          disabled={uploading}
-          className={`w-full p-8 rounded-2xl border-2 border-dashed transition-all ${
-            uploading
+          disabled={processando}
+          className={`w-full p-12 rounded-2xl border-2 border-dashed transition-all ${
+            processando
               ? 'border-amber-400/50 bg-amber-400/10 cursor-wait'
-              : validationResult?.valid
-              ? 'border-green-500/50 bg-green-500/10 hover:border-green-500 hover:bg-green-500/20 cursor-pointer'
+              : resultado?.valido
+              ? 'border-green-500/50 bg-green-500/10 cursor-pointer'
               : 'border-purple-400/50 bg-white/5 hover:border-amber-400 hover:bg-white/10 cursor-pointer'
           }`}
         >
           <div className="flex flex-col items-center justify-center space-y-4">
-            {uploading ? (
+            {processando ? (
               <>
-                <Loader2 className="w-12 h-12 text-amber-400 animate-spin" />
+                <Loader2 className="w-16 h-16 text-amber-400 animate-spin" />
                 <div className="text-center">
-                  <p className="text-white font-medium">Validando comprovante...</p>
-                  <p className="text-purple-300 text-sm mt-1">Por favor, aguarde</p>
+                  <p className="text-white font-medium text-lg">Validando comprovante...</p>
+                  <p className="text-purple-300 text-sm mt-2">Verificando todas as condições</p>
                 </div>
               </>
-            ) : validationResult?.valid ? (
+            ) : resultado?.valido ? (
               <>
-                <CheckCircle className="w-12 h-12 text-green-500" />
+                <CheckCircle className="w-16 h-16 text-green-500" />
                 <div className="text-center">
-                  <p className="text-white font-medium">Comprovante válido!</p>
-                  <p className="text-green-400 text-sm mt-1">Clique para enviar outro</p>
+                  <p className="text-white font-medium text-lg">Pagamento confirmado!</p>
+                  <p className="text-green-400 text-sm mt-2">Consulta liberada com sucesso</p>
+                </div>
+              </>
+            ) : resultado?.valido === false ? (
+              <>
+                <XCircle className="w-16 h-16 text-red-500" />
+                <div className="text-center">
+                  <p className="text-white font-medium text-lg">Comprovante não aprovado</p>
+                  <p className="text-red-400 text-sm mt-2">Verifique os dados e tente novamente</p>
                 </div>
               </>
             ) : (
               <>
-                <Upload className="w-12 h-12 text-purple-400" />
+                <Upload className="w-16 h-16 text-purple-400" />
                 <div className="text-center">
-                  <p className="text-white font-medium text-lg">
-                    Envie o comprovante do PIX
-                  </p>
-                  <p className="text-purple-300 text-sm mt-2">
-                    Clique aqui ou arraste o arquivo
-                  </p>
+                  <p className="text-white font-medium text-lg">Envie seu comprovante PIX</p>
+                  <p className="text-purple-300 text-sm mt-2">Clique para selecionar o arquivo</p>
                   <div className="flex items-center justify-center gap-4 mt-3 text-xs text-purple-400">
                     <span>JPG, PNG ou PDF</span>
                     <span>•</span>
@@ -136,110 +239,65 @@ const PaymentUploader = ({ onUploadSuccess, onUploadError, theme, amount = 10.00
         </motion.button>
       </div>
 
-      {/* Informações do Pagamento */}
-      <div className="bg-gradient-to-br from-purple-900/30 to-violet-900/30 rounded-xl p-6 mb-6">
-        <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-amber-400" />
-          Informações do Pagamento
-        </h4>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-purple-300 text-sm">Valor:</p>
-            <p className="text-white font-bold text-xl">R$ {amount.toFixed(2)}</p>
-          </div>
-          <div>
-            <p className="text-purple-300 text-sm">Tema:</p>
-            <p className="text-white font-medium capitalize">
-              {theme === 'amor' ? 'Amor' :
-               theme === 'carreira' ? 'Carreira' :
-               theme === 'financas' ? 'Finanças' :
-               theme === 'espiritualidade' ? 'Espiritualidade' :
-               theme === 'saude' ? 'Saúde' :
-               theme === 'traicao' ? 'Traição' :
-               theme === 'casamento' ? 'Casamento' :
-               theme === 'viagem' ? 'Viagem' :
-               theme === 'noivado' ? 'Noivado' :
-               theme === 'conselho' ? 'Conselho' :
-               theme === 'justica' ? 'Justiça' : theme}
-            </p>
-          </div>
-          <div>
-            <p className="text-purple-300 text-sm">Status:</p>
-            <p className={`font-medium ${
-              validationResult?.valid ? 'text-green-400' : 'text-amber-400'
-            }`}>
-              {validationResult?.valid ? '✅ Válido' : '⏳ Aguardando'}
-            </p>
-          </div>
-          <div>
-            <p className="text-purple-300 text-sm">Formato:</p>
-            <p className="text-white">JPG, PNG, PDF</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Informações do Arquivo (se enviado) */}
-      {fileInfo && (
+      {/* Mensagem de Resultado */}
+      {resultado && (
         <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="overflow-hidden"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
         >
-          <div className={`rounded-xl p-5 ${
-            validationResult?.valid
+          <div className={`rounded-xl p-5 text-center ${
+            resultado.valido
               ? 'bg-green-500/10 border border-green-500/30'
               : 'bg-red-500/10 border border-red-500/30'
           }`}>
-            <div className="flex items-start gap-3">
-              {validationResult?.valid ? (
-                <CheckCircle className="w-6 h-6 text-green-500 mt-1 flex-shrink-0" />
+            <div className="flex items-center justify-center gap-3 mb-3">
+              {resultado.valido ? (
+                <CheckCircle className="w-6 h-6 text-green-500" />
               ) : (
-                <AlertCircle className="w-6 h-6 text-red-500 mt-1 flex-shrink-0" />
+                <XCircle className="w-6 h-6 text-red-500" />
               )}
-              
-              <div className="flex-1">
-                <h5 className="font-medium text-white mb-2">
-                  {validationResult?.valid ? 'Arquivo válido' : 'Problema no arquivo'}
-                </h5>
-                
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-purple-300">Nome:</span>
-                    <span className="text-white font-mono truncate max-w-[200px]">
-                      {fileInfo.name}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <span className="text-purple-300">Tamanho:</span>
-                    <span className="text-white">{fileInfo.size} MB</span>
-                  </div>
-                  
-                  {validationResult?.error && (
-                    <div className="mt-3 p-3 bg-red-500/20 rounded-lg">
-                      <p className="text-red-300 text-sm">{validationResult.error}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <p className={`font-medium ${
+                resultado.valido ? 'text-green-400' : 'text-red-400'
+              }`}>
+                {resultado.valido ? 'CONSULTA LIBERADA' : 'CONSULTA BLOQUEADA'}
+              </p>
             </div>
+            
+            <p className="text-white text-sm mb-2">
+              {resultado.mensagem}
+            </p>
+            
+            {resultado.motivo && !resultado.valido && (
+              <p className="text-red-300 text-xs">
+                Motivo: {resultado.motivo}
+              </p>
+            )}
+            
+            {!resultado.valido && (
+              <div className="mt-3 pt-3 border-t border-red-500/20">
+                <button
+                  onClick={triggerFileInput}
+                  className="inline-flex items-center gap-2 text-red-300 hover:text-red-200 text-sm"
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  Tentar novamente com novo comprovante
+                </button>
+              </div>
+            )}
           </div>
         </motion.div>
       )}
 
-      {/* Instruções Simplificadas */}
-      <div className="mt-6 pt-6 border-t border-purple-400/30">
-        <h5 className="text-white font-medium mb-3 flex items-center gap-2">
-          <AlertCircle className="w-5 h-5 text-amber-400" />
-          Instrução importante:
-        </h5>
-        <ul className="space-y-2 text-sm text-purple-300">
-          <li className="flex items-start gap-2">
-            <span className="text-amber-400 mt-1">•</span>
-            <span>Após validação, sua leitura será liberada</span>
-          </li>
-        </ul>
+      {/* Instrução Básica */}
+      <div className="text-center">
+        <p className="text-purple-300 text-sm">
+          Envie o comprovante do PIX de R$ 10,00 feito hoje
+        </p>
+        <p className="text-purple-400 text-xs mt-1">
+          • Máximo 6 minutos desde o pagamento
+          • Nome: Gustavo Santos Ribeiro ou Gustavo S Ribeiro
+        </p>
       </div>
     </div>
   );

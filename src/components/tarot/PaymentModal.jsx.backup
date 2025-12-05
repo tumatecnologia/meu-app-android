@@ -7,7 +7,6 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, theme, onBackToHome
   const [copied, setCopied] = useState(false);
   const [paymentValidated, setPaymentValidated] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
 
   const pixKey = `12996764694`;
   const amount = 10.00;
@@ -19,43 +18,32 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, theme, onBackToHome
   };
 
   const handleUploadSuccess = async (uploadData) => {
-    console.log('📨 Dados recebidos do upload:', uploadData);
+    console.log('✅ Upload bem-sucedido:', uploadData);
     
     setProcessing(true);
-    setErrorMessage('');
     
     try {
-      // VERIFICAR SE FOI REALMENTE LIBERADO
-      if (!uploadData.liberado) {
-        console.log('❌ Upload não liberado:', uploadData.mensagem);
-        setErrorMessage(uploadData.mensagem || 'Comprovante não aprovado');
-        setProcessing(false);
-        return;
-      }
+      // Simular processamento do pagamento
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      console.log('✅ Comprovante validado - Processando...');
-      
-      // Simular processamento
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Criar ID de pagamento simulado
+      const paymentId = `payment_${Date.now()}_${uploadData.paymentRecord.hash_arquivo.substring(0, 8)}`;
       
       setPaymentValidated(true);
-      console.log('✅ Pagamento validado - Chamando onPaymentConfirmed');
       
-      // Chamar callback para liberar a leitura
-      // Passar um ID único para a consulta
-      const paymentId = uploadData.registro?.id_transacao || `payment_${Date.now()}`;
-      onPaymentConfirmed(paymentId);
+      // Aguardar um pouco e então confirmar
+      setTimeout(() => {
+        onPaymentConfirmed(paymentId);
+      }, 1000);
       
     } catch (error) {
-      console.error('❌ Erro no processamento:', error);
-      setErrorMessage('Erro no processamento. Tente novamente.');
+      console.error('Erro no processamento:', error);
       setProcessing(false);
     }
   };
 
   const handleUploadError = (error) => {
     console.error('❌ Erro no upload:', error);
-    setErrorMessage(error || 'Erro ao processar comprovante');
   };
 
   if (!isOpen) return null;
@@ -119,7 +107,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, theme, onBackToHome
             </div>
           </div>
           
-          {/* Chave PIX */}
+          {/* Chave PIX Compacta */}
           <div className="bg-black/30 rounded-lg p-3">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-amber-300 text-sm font-semibold flex items-center gap-1">
@@ -147,7 +135,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, theme, onBackToHome
               {pixKey}
             </code>
             <p className="text-purple-300 text-xs mt-2">
-              Copie e cole no seu banco
+              Copie esta chave e use no seu aplicativo bancário
             </p>
           </div>
         </div>
@@ -167,19 +155,6 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, theme, onBackToHome
           />
         </div>
 
-        {/* Mensagem de Erro */}
-        {errorMessage && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="overflow-hidden mb-4"
-          >
-            <div className="bg-gradient-to-r from-red-500/20 to-rose-500/20 rounded-xl p-4 text-center">
-              <p className="text-red-300 font-medium text-sm">{errorMessage}</p>
-            </div>
-          </motion.div>
-        )}
-
         {/* Processando Pagamento */}
         {processing && (
           <motion.div
@@ -190,18 +165,18 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, theme, onBackToHome
             <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl p-4 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-3"></div>
               <p className="text-white font-medium text-sm mb-1">
-                {paymentValidated ? 'Pagamento confirmado!' : 'Validando comprovante...'}
+                {paymentValidated ? 'Pagamento confirmado!' : 'Validando pagamento...'}
               </p>
               <p className="text-green-300 text-xs">
                 {paymentValidated 
-                  ? 'Liberando sua leitura...' 
-                  : 'Aguarde a validação do sistema'}
+                  ? 'Sua leitura será liberada em instantes...' 
+                  : 'Aguarde a validação do comprovante'}
               </p>
             </div>
           </motion.div>
         )}
 
-        {/* Botões */}
+        {/* Botões de Ação */}
         <div className="space-y-3">
           {!processing ? (
             <>
@@ -221,9 +196,11 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, theme, onBackToHome
               </button>
             </>
           ) : null}
+          
+          {/* Texto removido conforme solicitado */}
         </div>
 
-        {/* Botão Fechar */}
+        {/* Botão Fechar (X) */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-purple-300 hover:text-white"
