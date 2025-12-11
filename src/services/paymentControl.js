@@ -1,297 +1,256 @@
-/**
- * SISTEMA DE VALIDAÇÃO DE COMPROVANTES PIX COM PERSISTÊNCIA
- * COM LOGS DETALHADOS PARA DEBUG - VERSÃO CORRIGIDA
- */
+// src/services/paymentControl.js
+// Sistema flexível com OCR
 
-const DB_KEY = 'comprovante_consulta_db_final';
+import PaymentOCRService from './paymentOCRService.js';
 
 class PaymentControlService {
-  // Banco de dados em localStorage
-  static getDatabase() {
+  
+  static isToday(dateString) {
     try {
-      const stored = localStorage.getItem(DB_KEY);
-      if (stored) {
-        const data = JSON.parse(stored);
-        console.log('📂 Banco carregado:', data.registros?.length || 0, 'registros');
-        return new Map(data.registros || []);
+      if (!dateString) return false;
+      
+      const hoje = new Date();
+      const diaHoje = String(hoje.getDate()).padStart(2, '0');
+      const mesHoje = String(hoje.getMonth() + 1).padStart(2, '0');
+      const hojeFormatado = `${diaHoje}/${mesHoje}`;
+      
+      console.log(`📅 Validando data: "${dateString}" (hoje: ${hojeFormatado})`);
+      
+      // Se já for DD/MM
+      if (dateString.includes('/')) {
+        return dateString === hojeFormatado;
       }
-    } catch (error) {
-      console.error('❌ Erro ao carregar banco:', error);
-    }
-    return new Map();
-  }
-
-  static saveDatabase(registros) {
-    try {
-      const data = {
-        registros: Array.from(registros.entries()),
-        lastUpdate: new Date().toISOString(),
-        total: registros.size
+      
+      // Converter "08 Dez" para "08/12"
+      const monthMap = {
+        'jan': '01', 'fev': '02', 'mar': '03', 'abr': '04',
+        'mai': '05', 'jun': '06', 'jul': '07', 'ago': '08',
+        'set': '09', 'out': '10', 'nov': '11', 'dez': '12'
       };
-      localStorage.setItem(DB_KEY, JSON.stringify(data));
-      console.log('💾 Banco salvo com', registros.size, 'registros');
-    } catch (error) {
-      console.error('❌ Erro ao salvar banco:', error);
-    }
-  }
-
-  /**
-   * VALIDAÇÃO DAS 5 CONDIÇÕES + REGISTRO - VERSÃO CORRIGIDA
-   */
-  static async validarEProcessarComprovante(dadosComprovante, nomeArquivo) {
-    try {
-      console.log('\n🔍 INICIANDO VALIDAÇÃO DO COMPROVANTE - VERSÃO CORRIGIDA');
-      console.log('='.repeat(70));
       
-      const { data_comprovante, hora_comprovante, nome_favorecido, valor_pix, id_transacao } = dadosComprovante;
-      
-      console.log('📊 DADOS RECEBIDOS PARA VALIDAÇÃO:');
-      console.log('   ID:', id_transacao);
-      console.log('   Data:', data_comprovante);
-      console.log('   Hora:', hora_comprovante);
-      console.log('   Nome:', nome_favorecido);
-      console.log('   Valor:', valor_pix);
-      console.log('   Arquivo:', nomeArquivo);
-      
-      // Carregar banco
-      const database = this.getDatabase();
-      console.log('📈 BANCO ATUAL:', database.size, 'IDs registrados');
-      
-      // CONDIÇÃO 1: Data atual
-      console.log('\n1️⃣  ========== VERIFICANDO: Data atual ==========');
-      const dataAtual = new Date().toISOString().split('T')[0];
-      console.log(`   📅 Data comprovante: ${data_comprovante}`);
-      console.log(`   📅 Data atual: ${dataAtual}`);
-      console.log(`   🔄 São iguais? ${data_comprovante === dataAtual ? '✅ SIM' : '❌ NÃO'}`);
-      
-      if (data_comprovante !== dataAtual) {
-        console.log('   🚫 VALIDAÇÃO FALHOU: Data não é atual');
-        return {
-          valido: false,
-          motivo: 'Data do comprovante não é hoje',
-          mensagem: 'Por favor, faça novo pagamento para nova consulta!'
-        };
-      }
-      console.log('   ✅ PASSOU: Data é atual');
-      
-      // CONDIÇÃO 2: Hora ≤ 6 minutos - VERIFICAÇÃO CORRIGIDA
-      console.log('\n2️⃣  ========== VERIFICANDO: Hora ≤ 6 minutos ==========');
-      const horaAtual = new Date();
-      console.log(`   ⏰ Hora atual do sistema: ${horaAtual.toLocaleTimeString('pt-BR', { hour12: false })}`);
-      console.log(`   ⏰ Hora do comprovante: ${hora_comprovante}`);
-      
-      // Converter hora do comprovante para Date
-      const [horaComp, minutoComp, segundoComp] = hora_comprovante.split(':').map(Number);
-      const dataHoraComprovante = new Date();
-      dataHoraComprovante.setHours(horaComp, minutoComp, segundoComp, 0);
-      
-      console.log(`   📅 Data/Hora comprovante (ajustada): ${dataHoraComprovante.toLocaleString('pt-BR')}`);
-      console.log(`   📅 Data/Hora atual: ${horaAtual.toLocaleString('pt-BR')}`);
-      
-      // Calcular diferença em minutos
-      const diferencaMilissegundos = horaAtual - dataHoraComprovante;
-      const diferencaMinutos = diferencaMilissegundos / (1000 * 60);
-      
-      console.log(`   ⏱️  Diferença em milissegundos: ${diferencaMilissegundos}ms`);
-      console.log(`   ⏱️  Diferença em minutos: ${diferencaMinutos.toFixed(2)}min`);
-      console.log(`   🎯 Limite máximo permitido: 6 minutos`);
-      
-      // Verificar se está dentro do limite (0 a 6 minutos)
-      const dentroDoLimite = diferencaMinutos >= 0 && diferencaMinutos <= 6;
-      console.log(`   ✅ Está dentro do limite (0-6min)? ${dentroDoLimite ? 'SIM' : 'NÃO'}`);
-      
-      if (!dentroDoLimite) {
-        if (diferencaMinutos < 0) {
-          console.log(`   🚫 VALIDAÇÃO FALHOU: Hora do comprovante é FUTURA! (${diferencaMinutos.toFixed(2)}min)`);
-          return {
-            valido: false,
-            motivo: 'Hora do comprovante é futura',
-            mensagem: 'Por favor, faça novo pagamento para nova consulta!'
-          };
-        } else {
-          console.log(`   🚫 VALIDAÇÃO FALHOU: Hora > 6min (${diferencaMinutos.toFixed(2)}min)`);
-          return {
-            valido: false,
-            motivo: `Comprovante tem ${diferencaMinutos.toFixed(0)} minutos (limite: 6 minutos)`,
-            mensagem: 'Por favor, faça novo pagamento para nova consulta!'
-          };
+      // Extrair dia e mês
+      const parts = dateString.split(' ');
+      if (parts.length >= 2) {
+        const day = parts[0].padStart(2, '0');
+        const monthName = parts[1].toLowerCase().substring(0, 3);
+        
+        if (monthMap[monthName]) {
+          const convertedDate = `${day}/${monthMap[monthName]}`;
+          console.log(`📅 Convertido "${dateString}" para "${convertedDate}"`);
+          return convertedDate === hojeFormatado;
         }
       }
-      console.log('   ✅ PASSOU: Hora dentro do limite');
       
-      // CONDIÇÃO 3: Nome correto
-      console.log('\n3️⃣  ========== VERIFICANDO: Nome correto ==========');
-      const nomesPermitidos = ['GUSTAVO SANTOS RIBEIRO', 'GUSTAVO S RIBEIRO'];
-      const nomeNormalizado = nome_favorecido.trim().toUpperCase();
-      console.log(`   👤 Nome fornecido: "${nome_favorecido}"`);
-      console.log(`   🔠 Nome normalizado: "${nomeNormalizado}"`);
-      console.log(`   ✅ Nomes permitidos: ${nomesPermitidos.join(', ')}`);
+      return false;
+    } catch (error) {
+      console.error('Erro na validação da data:', error);
+      return false;
+    }
+  }
+  
+  static isWithin5Minutes(timeString) {
+    try {
+      if (!timeString) return false;
       
-      if (!nomesPermitidos.includes(nomeNormalizado)) {
-        console.log('   🚫 VALIDAÇÃO FALHOU: Nome incorreto');
-        return {
-          valido: false,
-          motivo: 'Nome do favorecido incorreto',
-          mensagem: 'Por favor, faça novo pagamento para nova consulta!'
+      const agora = new Date();
+      const agoraMin = agora.getHours() * 60 + agora.getMinutes();
+      
+      // Converter "20h24" para "20:24"
+      let cleanTime = timeString.replace('h', ':');
+      const [hour, minute] = cleanTime.split(':').map(Number);
+      const compMin = hour * 60 + minute;
+      
+      const diff = agoraMin - compMin;
+      const isValid = diff >= 0 && diff <= 5;
+      
+      console.log(`⏰ ${timeString} -> Diferença: ${diff} minutos (${isValid ? '✅' : '❌'})`);
+      return isValid;
+    } catch (error) {
+      console.error('Erro na validação da hora:', error);
+      return false;
+    }
+  }
+  
+  static isValidBeneficiary(name) {
+    if (!name) return false;
+    
+    // Remover quebras de linha
+    const cleanName = name.replace(/\n/g, ' ').trim();
+    const isValid = cleanName.toLowerCase().includes('gustavo') && 
+                    cleanName.toLowerCase().includes('ribeiro');
+    
+    console.log(`👤 Validando nome: "${name}" -> "${cleanName}" (${isValid ? '✅' : '❌'})`);
+    return isValid;
+  }
+  
+    static isValidAmount(amount) {
+    console.log('💰 [VALIDAÇÃO RIGOROSA] Iniciando...');
+    
+    if (amount === undefined || amount === null) {
+      console.log('❌ VALOR NULO OU INDEFINIDO');
+      return false;
+    }
+    
+    // VALOR EXATO EXIGIDO: R$ 10,00
+    const VALOR_EXIGIDO = 10.00;
+    const TOLERANCIA = 0.009; // Menos de 1 centavo
+    
+    console.log('💰 Valor exigido: R$ ' + VALOR_EXIGIDO.toFixed(2));
+    console.log('💰 Valor recebido: R$ ' + amount.toFixed(2));
+    
+    const diferenca = Math.abs(amount - VALOR_EXIGIDO);
+    const valido = diferenca <= TOLERANCIA;
+    
+    console.log('💰 Diferença: R$ ' + diferenca.toFixed(4));
+    
+    if (valido) {
+      console.log('✅ VALOR CORRETO! R$ 10,00 exatos.');
+    } else {
+      console.log('❌❌❌ VALOR INCORRETO! ❌❌❌');
+      console.log('🚨 MOTIVO: O valor deve ser EXATAMENTE R$ 10,00');
+      console.log('🚨 Valor recebido: R$ ' + amount.toFixed(2));
+      console.log('🚨 O PAGAMENTO SERÁ REJEITADO!');
+    }
+    
+    return valido;
+  }  static async processarArquivo(file) {
+    console.log('='.repeat(50));
+    console.log('🔮 PROCESSANDO COMPROVANTE');
+    console.log('='.repeat(50));
+    
+    try {
+      // Processar com OCR
+      const ocrResult = await PaymentOCRService.processImage(file);
+      
+      if (!ocrResult.success) {
+        console.log('⚠️ OCR encontrou problemas:', ocrResult.message);
+        
+        // Mesmo com problemas, tentar validar
+        const data = ocrResult.data || {};
+        
+        const validations = {
+          date: this.isToday(data.date),
+          time: this.isWithin5Minutes(data.time),
+          beneficiary: this.isValidBeneficiary(data.beneficiary),
+          amount: this.isValidAmount(data.amount)
         };
-      }
-      console.log('   ✅ PASSOU: Nome correto');
-      
-      // CONDIÇÃO 4: Valor = R$ 10,00
-      console.log('\n4️⃣  ========== VERIFICANDO: Valor = R$ 10,00 ==========');
-      const valorNumerico = parseFloat(valor_pix);
-      console.log(`   💰 Valor fornecido: R$ ${valor_pix}`);
-      console.log(`   🔢 Valor numérico: R$ ${valorNumerico}`);
-      console.log(`   🎯 Valor esperado: R$ 10.00`);
-      
-      if (Math.abs(valorNumerico - 10.00) >= 0.001) {
-        console.log('   🚫 VALIDAÇÃO FALHOU: Valor incorreto');
-        return {
-          valido: false,
-          motivo: 'Valor diferente de R$ 10,00',
-          mensagem: 'Por favor, faça novo pagamento para nova consulta!'
-        };
-      }
-      console.log('   ✅ PASSOU: Valor correto');
-      
-      // CONDIÇÃO 5: ID NÃO existe no banco
-      console.log('\n5️⃣  ========== VERIFICANDO: ID NÃO existe no banco ==========');
-      console.log(`   🔑 ID a verificar: ${id_transacao}`);
-      console.log(`   📊 Total no banco: ${database.size} registros`);
-      
-      if (database.has(id_transacao)) {
-        const registroExistente = database.get(id_transacao);
-        console.log('   🚫 VALIDAÇÃO FALHOU: ID já existe no banco!');
-        console.log('      📋 Registro existente:');
-        console.log('      - Data registro:', registroExistente.data_hora_registro);
-        console.log('      - Arquivo:', registroExistente.nome_arquivo);
-        console.log('      - ID:', registroExistente.id_transacao);
-        console.log('   🚫 ESTE COMPROVANTE JÁ FOI USADO ANTERIORMENTE!');
+        
+        console.log('📊 Validações:', validations);
+        
+        // Verificar se todos estão válidos
+        const allValid = validations.date && validations.time && 
+                        validations.beneficiary && validations.amount;
+        
+        if (allValid) {
+          // Salvar no banco de dados
+          const registro = {
+            id: Date.now().toString(),
+            date: data.date,
+            time: data.time,
+            beneficiary: data.beneficiary,
+            amount: data.amount,
+            fileName: file.name,
+            timestamp: new Date().toISOString(),
+            status: 'validated'
+          };
+          
+          // Salvar no localStorage
+          const db = JSON.parse(localStorage.getItem('tarot_payments_db') || '[]');
+          db.push(registro);
+          localStorage.setItem('tarot_payments_db', JSON.stringify(db));
+          
+          console.log('✅✅✅ PAGAMENTO VALIDADO! ✅✅✅');
+          return {
+            valido: true,
+            mensagem: '✅ Pagamento validado com sucesso!',
+            paymentId: registro.id
+          };
+        }
         
         return {
           valido: false,
-          motivo: 'Este comprovante já foi utilizado anteriormente',
-          mensagem: 'Por favor, faça novo pagamento para nova consulta!'
+          mensagem: '❌ Dados incompletos no comprovante',
+          necessidadeFormulario: true,
+          dadosExtraidos: data
         };
       }
-      console.log('   ✅ PASSOU: ID não existe no banco');
       
-      console.log('\n🎉 ========== TODAS AS 5 CONDIÇÕES FORAM ATENDIDAS! ==========');
-      console.log('='.repeat(70));
+      // OCR completo
+      const data = ocrResult.data;
       
-      // REGISTRAR COMPROVANTE VÁLIDO
-      console.log('\n📋 REGISTRANDO COMPROVANTE NO BANCO...');
-      const registro = {
-        id: `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        id_transacao,
-        data_comprovante,
-        hora_comprovante,
-        nome_favorecido,
-        valor_pix,
-        nome_arquivo: nomeArquivo,
-        data_hora_registro: new Date().toISOString().replace('T', ' ').substr(0, 19),
-        data_hora_registro_iso: new Date().toISOString(),
-        status: 'ativo',
-        utilizado_para_consulta: true
+      // Validar todos os campos
+      const validacoes = {
+        data: this.isToday(data.date),
+        hora: this.isWithin5Minutes(data.time),
+        nome: this.isValidBeneficiary(data.beneficiary),
+        valor: this.isValidAmount(data.amount)
       };
       
-      database.set(id_transacao, registro);
-      this.saveDatabase(database);
+      console.log('📊 Validações completas:', validacoes);
       
-      console.log(`✅ COMPROVANTE REGISTRADO COM SUCESSO`);
-      console.log(`   ID: ${id_transacao}`);
-      console.log(`   Data registro: ${registro.data_hora_registro}`);
-      console.log(`   Este ID NÃO poderá ser usado novamente!`);
-      console.log('='.repeat(70));
-      
-      // Limpar registros antigos
-      this.limparRegistrosAntigos(database);
+      if (validacoes.data && validacoes.hora && validacoes.nome && validacoes.valor) {
+        // Salvar no banco de dados
+        const registro = {
+          id: Date.now().toString(),
+          date: data.date,
+          time: data.time,
+          beneficiary: data.beneficiary,
+          amount: data.amount,
+          fileName: file.name,
+          timestamp: new Date().toISOString(),
+          status: 'validated',
+          readingAccessed: false
+        };
+        
+        const db = JSON.parse(localStorage.getItem('tarot_payments_db') || '[]');
+        db.push(registro);
+        localStorage.setItem('tarot_payments_db', JSON.stringify(db));
+        
+        console.log('✅✅✅ PAGAMENTO VALIDADO VIA OCR! ✅✅✅');
+        return {
+          valido: true,
+          mensagem: '✅ Pagamento validado! Liberando consulta...',
+          paymentId: registro.id
+        };
+      }
       
       return {
-        valido: true,
-        mensagem: 'Consulta liberada com sucesso!',
-        registro: registro,
-        dados: dadosComprovante
+        valido: false,
+        mensagem: '❌ Dados inválidos no comprovante',
+        necessidadeFormulario: true,
+        dadosExtraidos: data
       };
       
     } catch (error) {
-      console.error('\n❌ ERRO NO PROCESSAMENTO:', error);
-      console.trace(); // Mostrar stack trace para debug
+      console.error('❌ ERRO NO PROCESSAMENTO:', error);
       return {
         valido: false,
-        motivo: error.message || 'Erro na validação',
-        mensagem: 'Erro no processamento. Tente novamente.'
+        mensagem: `❌ Erro: ${error.message}`,
+        necessidadeFormulario: true
       };
     }
   }
-
-  static limparRegistrosAntigos(database) {
-    const noventaDiasAtras = new Date();
-    noventaDiasAtras.setDate(noventaDiasAtras.getDate() - 90);
-    
-    let removidos = 0;
-    
-    for (const [idTransacao, registro] of database.entries()) {
-      const dataRegistro = new Date(registro.data_hora_registro_iso);
-      
-      if (dataRegistro < noventaDiasAtras) {
-        database.delete(idTransacao);
-        removidos++;
-      }
-    }
-    
-    if (removidos > 0) {
-      console.log(`🧹 ${removidos} registros antigos removidos`);
-      this.saveDatabase(database);
+  
+  static checkReadingAccess() {
+    try {
+      const db = JSON.parse(localStorage.getItem('tarot_payments_db') || '[]');
+      return db.find(p => p.status === 'validated' && !p.readingAccessed);
+    } catch {
+      return null;
     }
   }
-
-  // Métodos para debug (mantidos para testes)
-  static listarRegistros() {
-    const database = this.getDatabase();
-    console.log('\n📋 TODOS OS REGISTROS NO BANCO:');
-    console.log('='.repeat(50));
-    
-    if (database.size === 0) {
-      console.log('Nenhum registro encontrado');
-      return [];
+  
+  static markReadingAsAccessed(paymentId) {
+    try {
+      const db = JSON.parse(localStorage.getItem('tarot_payments_db') || '[]');
+      const updatedDb = db.map(p => 
+        p.id === paymentId ? { ...p, readingAccessed: true } : p
+      );
+      localStorage.setItem('tarot_payments_db', JSON.stringify(updatedDb));
+      return true;
+    } catch {
+      return false;
     }
-    
-    const registros = Array.from(database.values());
-    registros.forEach((reg, i) => {
-      console.log(`${i+1}. ID: ${reg.id_transacao}`);
-      console.log(`   Data: ${reg.data_comprovante} ${reg.hora_comprovante}`);
-      console.log(`   Registro: ${reg.data_hora_registro}`);
-      console.log(`   Arquivo: ${reg.nome_arquivo}`);
-      console.log('   ---');
-    });
-    
-    return registros;
-  }
-
-  static verificarID(idTransacao) {
-    const database = this.getDatabase();
-    const existe = database.has(idTransacao);
-    
-    console.log(`\n🔍 VERIFICANDO ID: ${idTransacao}`);
-    console.log(`   Existe no banco? ${existe ? '✅ SIM' : '❌ NÃO'}`);
-    
-    if (existe) {
-      const registro = database.get(idTransacao);
-      console.log('   Detalhes do registro:');
-      console.log('   - Data registro:', registro.data_hora_registro);
-      console.log('   - Arquivo:', registro.nome_arquivo);
-      console.log('   - ID transação:', registro.id_transacao);
-      return { existe: true, registro };
-    }
-    
-    return { existe: false, registro: null };
-  }
-
-  static limparBanco() {
-    localStorage.removeItem(DB_KEY);
-    console.log('🧹 Banco de dados limpo');
-    return true;
   }
 }
 

@@ -1,173 +1,263 @@
-/**
- * Serviço para controle de pagamentos
- * Gerencia hash de comprovantes, transações PIX e status
- */
-
-// Simulação de banco de dados em memória (em produção, usar API/banco real)
-const paymentRecords = new Map();
+// src/services/paymentControl.js - VERSÃO SIMPLIFICADA
 
 class PaymentControlService {
-  /**
-   * Criar novo registro de controle de pagamento
-   * @param {Object} data - Dados do pagamento
-   * @returns {Promise<Object>} - Registro criado
-   */
-  static async createPaymentControl(data) {
-    const { hash_arquivo, nome_arquivo, id_transacao, status = 'ativo' } = data;
-    
-    if (!hash_arquivo) {
-      throw new Error('hash_arquivo é obrigatório');
+  
+  // CONDIÇÃO 1: Data EXATAMENTE igual a hoje
+  static isToday(dateString) {
+    try {
+      const hoje = new Date();
+      const dia = String(hoje.getDate()).padStart(2, '0');
+      const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+      const hojeFormatado = `${dia}/${mes}`;
+      
+      // Aceitar DD.MM ou DD/MM
+      const dataNormalizada = dateString.replace('.', '/');
+      const valido = dataNormalizada === hojeFormatado;
+      
+      console.log(`[1] Data: ${dataNormalizada} = ${hojeFormatado}? ${valido ? '✅' : '❌'}`);
+      return valido;
+    } catch (error) {
+      console.error('Erro data:', error);
+      return false;
     }
-    
-    // Verificar se hash já existe
-    if (paymentRecords.has(hash_arquivo)) {
-      throw new Error('Hash de arquivo já registrado');
+  }
+  
+  // CONDIÇÃO 2: Hora ≤ 5 minutos
+  static isWithin5Minutes(timeString) {
+    try {
+      const agora = new Date();
+      const agoraMin = agora.getHours() * 60 + agora.getMinutes();
+      
+      // Aceitar HH.MM ou HH:MM
+      const horaNormalizada = timeString.replace('.', ':');
+      const [hora, minuto] = horaNormalizada.split(':').map(Number);
+      const compMin = hora * 60 + minuto;
+      
+      const diferenca = agoraMin - compMin;
+      const valido = diferenca >= 0 && diferenca <= 5;
+      
+      console.log(`[2] Hora: ${horaNormalizada}, Dif: ${diferenca}min? ${valido ? '✅' : '❌'}`);
+      return valido;
+    } catch (error) {
+      console.error('Erro hora:', error);
+      return false;
     }
+  }
+  
+  // CONDIÇÃO 3: Nome correto
+  static isValidBeneficiary(beneficiary) {
+    const nomesValidos = [
+      "Gustavo Santos Ribeiro",
+      "Gustavo S Ribeiro"
+    ];
     
-    const record = {
-      hash_arquivo,
-      nome_arquivo: nome_arquivo || `comprovante_${Date.now()}.jpg`,
-      id_transacao: id_transacao || `pix_${Date.now()}`,
-      status,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+    const nomeLimpo = beneficiary.trim();
+    const valido = nomesValidos.some(n => 
+      n.toLowerCase() === nomeLimpo.toLowerCase()
+    );
+    
+    console.log(`[3] Nome: "${nomeLimpo}"? ${valido ? '✅' : '❌'}`);
+    return valido;
+  }
+  
+  // CONDIÇÃO 4: Valor R$ 10,00
+  static isValidAmount(amount) {
+    const valido = Math.abs(amount - 10.00) < 0.01;
+    console.log(`[4] Valor: R$ ${amount.toFixed(2)} = R$ 10,00? ${valido ? '✅' : '❌'}`);
+    return valido;
+  }
+  
+  // CONDIÇÃO 5: Não duplicado
+  static isDuplicatePayment(paymentData) {
+    try {
+      const db = JSON.parse(localStorage.getItem('tarot_payments_db') || '[]');
+      const duplicado = db.some(r => 
+        r.date === paymentData.date &&
+        r.time === paymentData.time &&
+        Math.abs(r.amount - paymentData.amount) < 0.01 &&
+        r.beneficiary.toLowerCase() === paymentData.beneficiary.toLowerCase()
+      );
+      
+      console.log(`[5] Duplicado? ${duplicado ? '❌' : '✅'}`);
+      return duplicado;
+    } catch (error) {
+      console.error('Erro duplicidade:', error);
+      return false;
+    }
+  }
+  // EXTRAIR DADOS - VERSÃO SIMPLES
+  static extractPaymentData(fileName) {
+    console.log('📄 Arquivo:', fileName);
+    
+    try {
+      // Remover extensão
+      const nomeSemExt = fileName.split('.').slice(0, -1).join('.');
+      const partes = nomeSemExt.split(/[_\-\s]+/);
+      
+      console.log('Partes:', partes);
+      
+      // Procurar padrão DD.MM ou DD/MM
+      let data = '';
+      let hora = '';
+      let nomeInicio = 0;
+      
+      for (let i = 0; i < partes.length; i++) {
+        if (partes[i].match(/^\d{1,2}[\.\/]\d{1,2}$/)) {
+          data = partes[i];
+          
+          // Próxima parte deve ser hora
+          if (i + 1 < partes.length && partes[i + 1].match(/^\d{1,2}[\.\:]\d{1,2}$/)) {
+            hora = partes[i + 1];
+            nomeInicio = i + 2;
+            break;
+          }
+        }
+      }
+      
+      if (!data || !hora) {
+        throw new Error('Data ou hora não encontrada');
+      }
+      
+      // Nome são todas as partes até o penúltimo
+      const nomeParts = [];
+      for (let i = nomeInicio; i < partes.length - 1; i++) {
+        // Parar se encontrar número (possível valor)
+        if (partes[i].match(/^\d+\.?\d*$/)) break;
+        nomeParts.push(partes[i]);
+      }
+      
+      const nome = nomeParts.join(' ');
+      const valor = parseFloat(partes[partes.length - 1]);
+      
+      if (isNaN(valor)) {
+        throw new Error('Valor inválido');
+      }
+      
+      const dados = {
+        date: data.replace('.', '/'),
+        time: hora.replace('.', ':'),
+        beneficiary: nome,
+        amount: valor,
+        fileName: fileName
+      };
+      
+      console.log('📦 Extraído:', dados);
+      return dados;
+    } catch (error) {
+      console.error('❌ Erro extração:', error);
+      throw new Error(`Formato: data_hora_nome_10.00. Ex: "07.12_18.05_Gustavo Santos Ribeiro_10.00.jpg"`);
+    }
+  }
+  
+  // SALVAR
+  static savePaymentToDatabase(paymentData) {
+    const registro = {
+      id: `pix_${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      date: paymentData.date,
+      time: paymentData.time,
+      beneficiary: paymentData.beneficiary,
+      amount: paymentData.amount,
+      fileName: paymentData.fileName,
+      status: 'validated',
+      readingAccessed: false
     };
     
-    paymentRecords.set(hash_arquivo, record);
+    const db = JSON.parse(localStorage.getItem('tarot_payments_db') || '[]');
+    db.push(registro);
+    localStorage.setItem('tarot_payments_db', JSON.stringify(db));
     
-    console.log('📋 PaymentControl criado:', record);
-    return record;
+    console.log('💾 Salvo:', registro.id);
+    return registro;
   }
-  
-  /**
-   * Buscar registro por hash
-   * @param {string} hash - Hash do arquivo
-   * @returns {Promise<Object|null>} - Registro encontrado ou null
-   */
-  static async getByHash(hash) {
-    return paymentRecords.get(hash) || null;
-  }
-  
-  /**
-   * Verificar se hash já foi usado
-   * @param {string} hash - Hash do arquivo
-   * @returns {Promise<boolean>} - true se já foi usado
-   */
-  static async isHashUsed(hash) {
-    const record = paymentRecords.get(hash);
-    return !!record;
-  }
-  
-  /**
-   * Atualizar status de um registro
-   * @param {string} hash - Hash do arquivo
-   * @param {string} status - Novo status ('ativo' ou 'inativo')
-   * @returns {Promise<Object>} - Registro atualizado
-   */
-  static async updateStatus(hash, status) {
-    if (!['ativo', 'inativo'].includes(status)) {
-      throw new Error('Status inválido. Use "ativo" ou "inativo"');
-    }
+  // PROCESSAR
+  static async processarArquivo(file) {
+    console.log('='.repeat(50));
+    console.log('🔄 VALIDAÇÃO PIX');
+    console.log('='.repeat(50));
     
-    const record = paymentRecords.get(hash);
-    if (!record) {
-      throw new Error('Registro não encontrado');
-    }
-    
-    record.status = status;
-    record.updated_at = new Date().toISOString();
-    paymentRecords.set(hash, record);
-    
-    console.log(`📋 PaymentControl ${hash} atualizado para status: ${status}`);
-    return record;
-  }
-  
-  /**
-   * Listar todos os registros (para admin)
-   * @param {string} status - Filtrar por status (opcional)
-   * @returns {Promise<Array>} - Lista de registros
-   */
-  static async listAll(status = null) {
-    let records = Array.from(paymentRecords.values());
-    
-    if (status) {
-      records = records.filter(record => record.status === status);
-    }
-    
-    return records.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  }
-  
-  /**
-   * Gerar hash único para arquivo
-   * @param {File} file - Arquivo do comprovante
-   * @returns {Promise<string>} - Hash gerado
-   */
-  static async generateFileHash(file) {
-    // Em produção, usar algoritmo de hash real (SHA-256)
-    // Aqui simulamos com uma combinação
-    const timestamp = Date.now();
-    const fileName = file.name;
-    const fileSize = file.size;
-    const random = Math.random().toString(36).substring(2, 15);
-    
-    // Hash simulado: fileHash_timestamp_random
-    return `fileHash_${timestamp}_${random}`;
-  }
-  
-  /**
-   * Validar comprovante PIX
-   * @param {File} file - Arquivo do comprovante
-   * @returns {Promise<Object>} - Resultado da validação
-   */
-  static async validatePaymentProof(file) {
     try {
-      // 1. Gerar hash do arquivo
-      const hash = await this.generateFileHash(file);
+      const paymentData = this.extractPaymentData(file.name);
       
-      // 2. Verificar se já foi usado
-      const isUsed = await this.isHashUsed(hash);
-      if (isUsed) {
+      const condicoes = {
+        dataHoje: this.isToday(paymentData.date),
+        dentro5min: this.isWithin5Minutes(paymentData.time),
+        nomeExato: this.isValidBeneficiary(paymentData.beneficiary),
+        valorExato: this.isValidAmount(paymentData.amount),
+        naoDuplicado: !this.isDuplicatePayment(paymentData)
+      };
+      
+      console.log('='.repeat(50));
+      console.log('📊 RESULTADO:');
+      Object.entries(condicoes).forEach(([k, v]) => {
+        console.log(`  ${k}: ${v ? '✅' : '❌'}`);
+      });
+      console.log('='.repeat(50));
+      
+      const todasValidas = Object.values(condicoes).every(v => v === true);
+      
+      if (!todasValidas) {
+        const falsas = Object.keys(condicoes).filter(k => !condicoes[k]);
         return {
-          valid: false,
-          error: 'Este comprovante já foi utilizado anteriormente',
-          hash
+          valido: false,
+          mensagem: "❌ Comprovante inválido. Faça novo pagamento.",
+          detalhes: condicoes
         };
       }
       
-      // 3. Validar tipo de arquivo (em produção, fazer análise mais detalhada)
-      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-      if (!validTypes.includes(file.type)) {
-        return {
-          valid: false,
-          error: 'Tipo de arquivo não permitido. Use JPG, PNG ou PDF',
-          hash
-        };
-      }
-      
-      // 4. Validar tamanho (máximo 5MB)
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      if (file.size > maxSize) {
-        return {
-          valid: false,
-          error: 'Arquivo muito grande. Tamanho máximo: 5MB',
-          hash
-        };
-      }
+      const registro = this.savePaymentToDatabase(paymentData);
       
       return {
-        valid: true,
-        hash,
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type
+        valido: true,
+        mensagem: "✅ Pagamento validado! Liberando consulta...",
+        paymentId: registro.id
       };
       
     } catch (error) {
-      console.error('Erro na validação do comprovante:', error);
+      console.error('❌ ERRO:', error);
       return {
-        valid: false,
-        error: 'Erro ao validar comprovante'
+        valido: false,
+        mensagem: `❌ ${error.message}`
       };
+    }
+  }
+  
+  // OUTRAS FUNÇÕES
+  static checkReadingAccess() {
+    try {
+      const db = JSON.parse(localStorage.getItem('tarot_payments_db') || '[]');
+      return db.find(p => p.status === 'validated' && !p.readingAccessed) || null;
+    } catch (error) {
+      console.error('Erro acesso:', error);
+      return null;
+    }
+  }
+  
+  static markReadingAsAccessed(paymentId) {
+    try {
+      const db = JSON.parse(localStorage.getItem('tarot_payments_db') || '[]');
+      const novoDb = db.map(p => 
+        p.id === paymentId ? { ...p, readingAccessed: true } : p
+      );
+      localStorage.setItem('tarot_payments_db', JSON.stringify(novoDb));
+      return true;
+    } catch (error) {
+      console.error('Erro marcando:', error);
+      return false;
+    }
+  }
+  
+  static clearDatabase() {
+    localStorage.removeItem('tarot_payments_db');
+    console.log('🧹 Limpo!');
+  }
+  
+  static getAllPayments() {
+    try {
+      return JSON.parse(localStorage.getItem('tarot_payments_db') || '[]');
+    } catch (error) {
+      console.error('Erro listando:', error);
+      return [];
     }
   }
 }

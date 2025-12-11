@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Arquivos de backup e teste
+*.backup
+*.corrupted
+test-*.js
+test-*.html
+/tmp/
