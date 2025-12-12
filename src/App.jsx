@@ -21,7 +21,7 @@ function ReadingHistory() {
 
 function App() {
   return (
-    <Router>
+    <Router basename="/meu-app-android">
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/daily-card" element={<DailyCard />} />
