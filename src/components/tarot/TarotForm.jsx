@@ -159,7 +159,7 @@ const TarotForm = ({ themes, selectedTheme, onThemeSelect, onFormSubmit, onBack 
             <span className="text-amber-300">*</span>
             <span>Campos obrigatórios</span>
             <span className="text-purple-300">•</span>
-            <span className="text-amber-300 font-bold">R$ 10,00</span>
+            <span className="text-amber-300 font-bold">Mínimo R$ 10,00</span>
           </div>
         </div>
       </div>

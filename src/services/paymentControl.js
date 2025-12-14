@@ -1,121 +1,165 @@
 // src/services/paymentControl.js
-// Sistema flexível com OCR
+// Sistema flexível com OCR - VALIDAÇÃO ATUALIZADA (Data/Hora atual do sistema)
 
 import PaymentOCRService from './paymentOCRService.js';
 
 class PaymentControlService {
   
-  static isToday(dateString) {
+  // ========== FUNÇÃO PRINCIPAL DE VALIDAÇÃO DE DATA/HORA ==========
+  static validateDateTime(dateString, timeString) {
+    console.log('📅⏰ [VALIDAÇÃO] Validando data e hora do comprovante...');
+    console.log(`   Data do comprovante: "${dateString}"`);
+    console.log(`   Hora do comprovante: "${timeString}"`);
+    
     try {
-      if (!dateString) return false;
-      
-      const hoje = new Date();
-      const diaHoje = String(hoje.getDate()).padStart(2, '0');
-      const mesHoje = String(hoje.getMonth() + 1).padStart(2, '0');
-      const hojeFormatado = `${diaHoje}/${mesHoje}`;
-      
-      console.log(`📅 Validando data: "${dateString}" (hoje: ${hojeFormatado})`);
-      
-      // Se já for DD/MM
-      if (dateString.includes('/')) {
-        return dateString === hojeFormatado;
+      if (!dateString || !timeString) {
+        console.log('❌ Data ou hora não fornecida');
+        return false;
       }
       
-      // Converter "08 Dez" para "08/12"
-      const monthMap = {
-        'jan': '01', 'fev': '02', 'mar': '03', 'abr': '04',
-        'mai': '05', 'jun': '06', 'jul': '07', 'ago': '08',
-        'set': '09', 'out': '10', 'nov': '11', 'dez': '12'
-      };
+      const agora = new Date();
+      console.log(`   Hora atual do sistema: ${agora.toLocaleString('pt-BR')}`);
       
-      // Extrair dia e mês
-      const parts = dateString.split(' ');
-      if (parts.length >= 2) {
-        const day = parts[0].padStart(2, '0');
-        const monthName = parts[1].toLowerCase().substring(0, 3);
+      // 1. CONVERTER DATA DO COMPROVANTE
+      let dia, mes, ano;
+      
+      // Caso 1: Formato "DD/MM" ou "DD/MM/AAAA"
+      if (dateString.includes('/')) {
+        const partes = dateString.split('/');
+        dia = parseInt(partes[0]);
+        mes = parseInt(partes[1]) - 1; // JavaScript: Janeiro = 0
         
-        if (monthMap[monthName]) {
-          const convertedDate = `${day}/${monthMap[monthName]}`;
-          console.log(`📅 Convertido "${dateString}" para "${convertedDate}"`);
-          return convertedDate === hojeFormatado;
+        if (partes.length >= 3) {
+          ano = parseInt(partes[2]);
+          // Se ano tem 2 dígitos, assume século 21
+          if (ano < 100) ano += 2000;
+        } else {
+          // Apenas DD/MM, assume ano atual
+          ano = agora.getFullYear();
+        }
+      }
+      // Caso 2: Formato "08 Dez" ou "08 Dezembro"
+      else {
+        const partes = dateString.split(' ');
+        if (partes.length >= 2) {
+          dia = parseInt(partes[0]);
+          const mesTexto = partes[1].toLowerCase().substring(0, 3);
+          
+          const monthMap = {
+            'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3,
+            'mai': 4, 'jun': 5, 'jul': 6, 'ago': 7,
+            'set': 8, 'out': 9, 'nov': 10, 'dez': 11
+          };
+          
+          mes = monthMap[mesTexto] !== undefined ? monthMap[mesTexto] : 11; // Dezembro como padrão
+          ano = agora.getFullYear();
+        } else {
+          console.log('❌ Formato de data inválido');
+          return false;
         }
       }
       
-      return false;
+      // 2. CONVERTER HORA DO COMPROVANTE
+      let hora, minuto;
+      const horaLimpa = timeString.replace('h', ':').replace('H', ':');
+      const horaPartes = horaLimpa.split(':');
+      
+      if (horaPartes.length >= 2) {
+        hora = parseInt(horaPartes[0]);
+        minuto = parseInt(horaPartes[1]);
+      } else {
+        console.log('❌ Formato de hora inválido');
+        return false;
+      }
+      
+      // 3. CRIAR OBJETO DATE DO COMPROVANTE
+      const dataHoraComprovante = new Date(ano, mes, dia, hora, minuto, 0, 0);
+      console.log(`   Data/hora do comprovante: ${dataHoraComprovante.toLocaleString('pt-BR')}`);
+      
+      // 4. CALCULAR DIFERENÇA EM MILISSEGUNDOS
+      const diferencaMs = agora.getTime() - dataHoraComprovante.getTime();
+      const diferencaMinutos = diferencaMs / (1000 * 60);
+      
+      console.log(`   Diferença: ${diferencaMinutos.toFixed(1)} minutos`);
+      
+      // 5. VALIDAR: diferença máxima de 10 minutos (comprovante deve ser do PASSADO, não do futuro)
+      // Aceita comprovantes emitidos ATÉ 10 minutos atrás
+      const valido = diferencaMinutos >= 0 && diferencaMinutos <= 10;
+      
+      if (valido) {
+        console.log(`✅ DATA/HORA VÁLIDA! Comprovante emitido há ${diferencaMinutos.toFixed(1)} minutos`);
+      } else {
+        if (diferencaMinutos < 0) {
+          console.log(`❌ DATA/HORA INVÁLIDA! Comprovante é do FUTURO (${Math.abs(diferencaMinutos).toFixed(1)} minutos adiantado)`);
+        } else {
+          console.log(`❌ DATA/HORA INVÁLIDA! Comprovante tem ${diferencaMinutos.toFixed(1)} minutos (máximo: 10 minutos)`);
+        }
+      }
+      
+      return valido;
+      
     } catch (error) {
-      console.error('Erro na validação da data:', error);
+      console.error('❌ Erro na validação de data/hora:', error);
       return false;
     }
   }
   
-  static isWithin5Minutes(timeString) {
-    try {
-      if (!timeString) return false;
-      
-      const agora = new Date();
-      const agoraMin = agora.getHours() * 60 + agora.getMinutes();
-      
-      // Converter "20h24" para "20:24"
-      let cleanTime = timeString.replace('h', ':');
-      const [hour, minute] = cleanTime.split(':').map(Number);
-      const compMin = hour * 60 + minute;
-      
-      const diff = agoraMin - compMin;
-      const isValid = diff >= 0 && diff <= 5;
-      
-      console.log(`⏰ ${timeString} -> Diferença: ${diff} minutos (${isValid ? '✅' : '❌'})`);
-      return isValid;
-    } catch (error) {
-      console.error('Erro na validação da hora:', error);
-      return false;
-    }
-  }
-  
+  // ========== VALIDAÇÃO DE NOME ==========
   static isValidBeneficiary(name) {
     if (!name) return false;
     
     // Remover quebras de linha
-    const cleanName = name.replace(/\n/g, ' ').trim();
-    const isValid = cleanName.toLowerCase().includes('gustavo') && 
-                    cleanName.toLowerCase().includes('ribeiro');
+    const cleanName = name.replace(/\n/g, ' ').trim().toLowerCase();
     
-    console.log(`👤 Validando nome: "${name}" -> "${cleanName}" (${isValid ? '✅' : '❌'})`);
+    // ACEITA DUAS FORMAS:
+    // 1. Gustavo Santos Ribeiro (completo)
+    // 2. Gustavo S Ribeiro (abreviado)
+    const isValid = (
+      cleanName.includes('gustavo') && 
+      cleanName.includes('ribeiro') &&
+      (cleanName.includes('santos') || cleanName.includes(' s ') || cleanName.includes(' s. '))
+    );
+    
+    console.log(`👤 [NOME] Validando: "${name}" -> "${cleanName}" (${isValid ? '✅' : '❌'})`);
     return isValid;
   }
   
-    static isValidAmount(amount) {
-    console.log('💰 [VALIDAÇÃO RIGOROSA] Iniciando...');
+  // ========== VALIDAÇÃO DE VALOR ==========
+  static isValidAmount(amount) {
+    console.log('💰 [VALOR] Validando valor...');
     
     if (amount === undefined || amount === null) {
       console.log('❌ VALOR NULO OU INDEFINIDO');
       return false;
     }
     
-    // VALOR EXATO EXIGIDO: R$ 10,00
-    const VALOR_EXIGIDO = 10.00;
+    // VALOR MÍNIMO ACEITO: R$ 10,00
+    const VALOR_MINIMO = 10.00;
     const TOLERANCIA = 0.009; // Menos de 1 centavo
     
-    console.log('💰 Valor exigido: R$ ' + VALOR_EXIGIDO.toFixed(2));
-    console.log('💰 Valor recebido: R$ ' + amount.toFixed(2));
+    console.log(`💰 Valor mínimo aceito: R$ ${VALOR_MINIMO.toFixed(2)}`);
+    console.log(`💰 Valor recebido: R$ ${amount.toFixed(2)}`);
     
-    const diferenca = Math.abs(amount - VALOR_EXIGIDO);
-    const valido = diferenca <= TOLERANCIA;
-    
-    console.log('💰 Diferença: R$ ' + diferenca.toFixed(4));
+    // Verificar se o valor é IGUAL ou MAIOR que R$ 10,00
+    const valido = amount >= (VALOR_MINIMO - TOLERANCIA);
     
     if (valido) {
-      console.log('✅ VALOR CORRETO! R$ 10,00 exatos.');
+      console.log(`✅ VALOR ACEITO! R$ ${amount.toFixed(2)} (≥ R$ ${VALOR_MINIMO.toFixed(2)})`);
     } else {
-      console.log('❌❌❌ VALOR INCORRETO! ❌❌❌');
-      console.log('🚨 MOTIVO: O valor deve ser EXATAMENTE R$ 10,00');
-      console.log('🚨 Valor recebido: R$ ' + amount.toFixed(2));
+      console.log('❌❌❌ VALOR REJEITADO! ❌❌❌');
+      console.log(`🚨 MOTIVO: O valor deve ser IGUAL OU MAIOR que R$ ${VALOR_MINIMO.toFixed(2)}`);
+      console.log(`🚨 Valor mínimo: R$ ${VALOR_MINIMO.toFixed(2)}`);
+      console.log(`🚨 Valor recebido: R$ ${amount.toFixed(2)}`);
       console.log('🚨 O PAGAMENTO SERÁ REJEITADO!');
     }
     
     return valido;
-  }  static async processarArquivo(file) {
+  }
+  
+  // ========== PROCESSAMENTO PRINCIPAL ==========
+  static async processarArquivo(file) {
     console.log('='.repeat(50));
-    console.log('🔮 PROCESSANDO COMPROVANTE');
+    console.log('🔮 PROCESSANDO COMPROVANTE PIX');
     console.log('='.repeat(50));
     
     try {
@@ -129,8 +173,7 @@ class PaymentControlService {
         const data = ocrResult.data || {};
         
         const validations = {
-          date: this.isToday(data.date),
-          time: this.isWithin5Minutes(data.time),
+          datetime: this.validateDateTime(data.date, data.time),
           beneficiary: this.isValidBeneficiary(data.beneficiary),
           amount: this.isValidAmount(data.amount)
         };
@@ -138,8 +181,9 @@ class PaymentControlService {
         console.log('📊 Validações:', validations);
         
         // Verificar se todos estão válidos
-        const allValid = validations.date && validations.time && 
-                        validations.beneficiary && validations.amount;
+        const allValid = validations.datetime && 
+                        validations.beneficiary && 
+                        validations.amount;
         
         if (allValid) {
           // Salvar no banco de dados
@@ -180,15 +224,14 @@ class PaymentControlService {
       
       // Validar todos os campos
       const validacoes = {
-        data: this.isToday(data.date),
-        hora: this.isWithin5Minutes(data.time),
+        datetime: this.validateDateTime(data.date, data.time),
         nome: this.isValidBeneficiary(data.beneficiary),
         valor: this.isValidAmount(data.amount)
       };
       
       console.log('📊 Validações completas:', validacoes);
       
-      if (validacoes.data && validacoes.hora && validacoes.nome && validacoes.valor) {
+      if (validacoes.datetime && validacoes.nome && validacoes.valor) {
         // Salvar no banco de dados
         const registro = {
           id: Date.now().toString(),
@@ -231,6 +274,7 @@ class PaymentControlService {
     }
   }
   
+  // ========== FUNÇÕES DE ACESSO À LEITURA ==========
   static checkReadingAccess() {
     try {
       const db = JSON.parse(localStorage.getItem('tarot_payments_db') || '[]');
