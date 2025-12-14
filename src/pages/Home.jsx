@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Sun, Moon, Sparkles, History } from 'lucide-react';
+import { Sun, Moon, Sparkles } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -95,20 +95,6 @@ export default function Home() {
           </motion.div>
         </div>
 
-        {/* History button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="text-center"
-        >
-          <Link to="/reading-history">
-            <button className="inline-flex items-center bg-white/5 border border-purple-400/30 text-purple-200 hover:bg-white/10 hover:text-white hover:border-purple-400 px-6 py-3 rounded-lg font-medium transition-all">
-              <History className="w-4 h-4 mr-2" />
-              Ver Histórico de Leituras
-            </button>
-          </Link>
-        </motion.div>
 
         {/* Footer info */}
         <motion.div
