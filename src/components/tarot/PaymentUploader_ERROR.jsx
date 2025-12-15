@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, Camera, Image as ImageIcon, CheckCircle, AlertCircle, Loader2, Info, Clock, Zap, Ban } from 'lucide-react';
-import { validatePaymentReceipt } from "../../services/pixValidator";
+import { validatePaymentReceipt } from "../../services/paymentControl";
 
 const PaymentUploader = ({ onValidationComplete, onCancel }) => {
   const [preview, setPreview] = useState(null);
@@ -50,10 +50,6 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
       }, 500);
     };
     reader.readAsDataURL(file);
-
-    // Resetar inputs
-    if (cameraInputRef.current) cameraInputRef.current.value = '';
-    if (galleryInputRef.current) galleryInputRef.current.value = '';
   };
 
   const validateFile = async (file) => {
@@ -63,64 +59,109 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
       setValidationMessage('Verificando tempo do comprovante...');
       setValidationDetails('Analisando data/hora da transação...');
       
-      // Importar dinamicamente
+      // Importar dinamicamente o serviço OCR atual
       const paymentControlModule = await import('../../services/paymentControl.js');
       const PaymentControlService = paymentControlModule.default;
       
       const resultado = await PaymentControlService.processarArquivo(file);
-      console.log('📊 Resultado completo:', resultado);
-  
-      // ========== VALIDAÇÃO PIX ==========
-      try {
-        // Extrair texto do OCR do resultado
-        const ocrText = resultado.ocrText || resultado.textoExtraido || '';
+      console.log('📊 Resultado OCR:', resultado);
+      
+      // Extrair texto do OCR (ajuste conforme sua implementação)
+      const ocrText = resultado.ocrText || resultado.textoExtraido || '';
+      
+      // ========== VALIDAÇÕES PIX ==========
+      if (ocrText && ocrText.trim().length > 20) {
+        console.log('🔍 Iniciando validações PIX...');
         
-        if (ocrText && ocrText.trim().length > 20) {
-          console.log('🔍 Validando regras PIX...');
+        try {
           const pixValidation = await validatePaymentReceipt(ocrText);
+          console.log('✅ Resultado validação PIX:', pixValidation);
           
           if (!pixValidation.isValid) {
-            // REJEITAR - não atende às regras PIX
+            // PAGAMENTO REJEITADO PELAS REGRAS PIX
             setValidationStatus('error');
             setValidationMessage('❌ Pagamento não aprovado');
             
-            // REJEITAR - não atende às regras PIX
-            setValidationStatus('error');
-            setValidationMessage('❌ Pagamento não aprovado');
-            
-            // Mensagem de erro corrigida
-            let errorDetails = 'PAGAMENTO REJEITADO:\n\n';
+            let errorDetails = '🚫 PAGAMENTO REJEITADO:\n\n';
             pixValidation.errors.forEach((error, index) => {
-              errorDetails += (index + 1) + '. ' + error + '\n';
+              errorDetails += `${index + 1}. ${error}\n`;
             });
             
             errorDetails += '\n📋 REQUISITOS PARA APROVAÇÃO:\n';
-            errorDetails += '• Favorecido: GUSTAVO SANTOS RIBEIRO ou GUSTAVO S RIBEIRO\n';
-            errorDetails += '• Valor mínimo: R$ 10,00\n';
-            errorDetails += '• Comprovante enviado em até 5 minutos\n';
-            errorDetails += '• ID de transação único\n';
+            errorDetails += '✅ Favorecido: GUSTAVO SANTOS RIBEIRO ou GUSTAVO S RIBEIRO\n';
+            errorDetails += '✅ Valor mínimo: R$ 10,00\n';
+            errorDetails += '✅ Comprovante enviado em até 5 minutos\n';
+            errorDetails += '✅ ID de transação único (não repetido)\n\n';
+            errorDetails += '🔄 SOLUÇÃO: Faça um novo pagamento atendendo todos os requisitos acima.';
             
             setValidationDetails(errorDetails);
-            return; // Para aqui - não continua
+            return; // Para a execução aqui
           }
           
-          // Se PIX válido, adicionar info aos detalhes
-          console.log('✅ Validação PIX aprovada:', pixValidation.extractedData);
+          // PAGAMENTO PIX VÁLIDO!
+          console.log('✅ Pagamento PIX validado com sucesso!');
           
-          // Salvar dados da transação
-          localStorage.setItem('ultimaTransacaoPix', JSON.stringify({
-            transactionId: pixValidation.extractedData.transactionId,
-            amount: pixValidation.extractedData.amount,
-            validatedAt: new Date().toISOString()
-          }));
+          // Se o OCR também validou, mostrar tudo
+          if (resultado.valido) {
+            setValidationStatus('success');
+            setValidationMessage('✅ Pagamento validado!');
+            
+            let details = '🎉 TODAS AS VALIDAÇÕES APROVADAS!\n\n';
+            details += '📋 VALIDAÇÃO PIX:\n';
+            details += `✓ Favorecido: ${pixValidation.extractedData.beneficiary || 'Validado'}\n`;
+            details += `✓ Valor: R$ ${pixValidation.extractedData.amount?.toFixed(2) || 'Validado'}\n`;
+            details += `✓ ID Transação: ${pixValidation.extractedData.transactionId || 'Gerado'}\n`;
+            details += `✓ Data/Hora: Dentro do prazo (5 minutos)\n\n`;
+            
+            if (resultado.dados?.textoEncontrado) {
+              details += '📄 INFORMAÇÕES DO COMPROVANTE:\n';
+              resultado.dados.textoEncontrado.forEach(item => {
+                details += `• ${item}\n`;
+              });
+            }
+            
+            if (resultado.tempoRestante !== undefined) {
+              details += `\n⏰ Restam ${resultado.tempoRestante} minutos do prazo total.`;
+            }
+            
+            setValidationDetails(details);
+            
+            // Salvar transação no localStorage
+            localStorage.setItem('ultimoPagamentoValido', JSON.stringify({
+              transactionId: pixValidation.extractedData.transactionId,
+              amount: pixValidation.extractedData.amount,
+              validatedAt: new Date().toISOString(),
+              fileName: file.name
+            }));
+            
+            // Gerar ID único
+            const paymentId = `pix_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            // Liberar consulta após 2 segundos
+            setTimeout(() => {
+              if (onValidationComplete) {
+                onValidationComplete({
+                  ...resultado,
+                  ...pixValidation,
+                  paymentId,
+                  fileName: file.name,
+                  fileSize: file.size,
+                  validatedAt: new Date().toISOString()
+                });
+              }
+            }, 2000);
+          }
+          
+        } catch (pixError) {
+          console.warn('⚠️ Erro específico na validação PIX:', pixError);
+          // Continua com validação normal se der erro
         }
-      } catch (pixError) {
-        console.warn('Erro na validação PIX:', pixError);
-        // Continua com validação normal se der erro
       }
-      // ========== FIM VALIDAÇÃO PIX ==========
+      // ========== FIM VALIDAÇÕES PIX ==========
       
-      if (resultado.valido) {
+      // Se não tem texto OCR suficiente ou validação PIX não foi executada,
+      // continua com validação normal (seu código atual)
+      if (resultado.valido && !validationStatus) {
         setValidationStatus('success');
         setValidationMessage('✅ Pagamento validado!');
         
@@ -137,10 +178,8 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
         
         setValidationDetails(details);
         
-        // Gerar ID único para o pagamento
         const paymentId = `pix_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
-        // Notificar o componente pai
         if (onValidationComplete) {
           onValidationComplete({
             ...resultado,
@@ -150,25 +189,15 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
             validatedAt: new Date().toISOString()
           });
         }
-      } else {
-        // 🔴 VERIFICAR SE É ERRO DE TEMPO EXCEDIDO
-        if (resultado.motivo === 'TEMPO_EXCEDIDO' || resultado.mensagem?.includes('EXPIRADO') || resultado.mensagem?.includes('EXCEDIDO')) {
+      } else if (!resultado.valido && !validationStatus) {
+        // Tratar erro de tempo (seu código atual)
+        if (resultado.motivo === 'TEMPO_EXCEDIDO' || resultado.mensagem?.includes('EXPIRADO')) {
           setValidationStatus('error');
           setValidationMessage('🚨 COMPROVANTE EXPIRADO!');
           setTempoExcedido(resultado.tempoExcedido);
           
-          let details = '⏰ ⚠️ ⚠️ ⚠️ ATENÇÃO: TEMPO ESGOTADO ⚠️ ⚠️ ⚠️\n\n';
-          details += 'Este comprovante foi emitido há MAIS DE 5 MINUTOS.\n\n';
-          details += '🔄 POR SEGURANÇA, VOCÊ DEVE:\n\n';
-          details += '1. ❌ IGNORAR este comprovante antigo\n';
-          details += '2. 💸 FAZER um NOVO PAGAMENTO PIX\n';
-          details += '3. ⏱️ Enviar em ATÉ 5 MINUTOS após pagar\n';
-          details += '4. 📸 Tirar print da confirmação IMEDIATAMENTE\n\n';
-          details += '📌 O sistema NÃO ACEITA comprovantes com mais de 5 minutos.\n';
-          details += '📌 Mesmo que o valor esteja correto.\n';
-          details += '📌 Mesmo que os dados estejam completos.\n\n';
-          details += '🔒 Motivo: Segurança contra fraudes temporais.';
-          
+          let details = '⏰ ⚠️ COMPROVANTE FORA DO PRAZO (5 minutos)\n\n';
+          details += '🔄 FAÇA UM NOVO PAGAMENTO E ENVIE EM ATÉ 5 MINUTOS\n';
           setValidationDetails(details);
         } else {
           setValidationStatus('error');
@@ -197,6 +226,22 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
             details += '   • Tire foto em ambiente claro\n';
             details += '   • Envie em ATÉ 5 MINUTOS\n';
             
+            setValidationDetails(details);
+          }
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro na validação:', error);
+      setValidationStatus('error');
+      setValidationMessage('❌ Erro ao processar comprovante');
+      setValidationDetails('Tente novamente com uma imagem mais nítida.');
+    }
+  };
+
+  // O restante do seu componente (render, etc.) permanece igual...
+  // Copie da linha 150 até o final do seu arquivo original
+  
             setValidationDetails(details);
           } else {
             setValidationDetails(resultado.mensagem || 'Não foi possível ler o comprovante.');

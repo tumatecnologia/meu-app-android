@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, Camera, Image as ImageIcon, CheckCircle, AlertCircle, Loader2, Info, Clock, Zap, Ban } from 'lucide-react';
-import { validatePaymentReceipt } from "../../services/pixValidator";
+import { validatePaymentReceipt } from "../../services/paymentControl";
 
 const PaymentUploader = ({ onValidationComplete, onCancel }) => {
   const [preview, setPreview] = useState(null);
@@ -69,56 +69,81 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
       
       const resultado = await PaymentControlService.processarArquivo(file);
       console.log('📊 Resultado completo:', resultado);
-  
-      // ========== VALIDAÇÃO PIX ==========
+      
+      // ===== VALIDAÇÕES PIX =====
       try {
-        // Extrair texto do OCR do resultado
+        // Extrair texto do OCR
         const ocrText = resultado.ocrText || resultado.textoExtraido || '';
         
         if (ocrText && ocrText.trim().length > 20) {
-          console.log('🔍 Validando regras PIX...');
+          console.log('🔍 Validando dados PIX...');
+          
           const pixValidation = await validatePaymentReceipt(ocrText);
+          console.log('✅ Resultado validação PIX:', pixValidation);
           
           if (!pixValidation.isValid) {
-            // REJEITAR - não atende às regras PIX
+            // PAGAMENTO REJEITADO
             setValidationStatus('error');
             setValidationMessage('❌ Pagamento não aprovado');
             
-            // REJEITAR - não atende às regras PIX
-            setValidationStatus('error');
-            setValidationMessage('❌ Pagamento não aprovado');
-            
-            // Mensagem de erro corrigida
-            let errorDetails = 'PAGAMENTO REJEITADO:\n\n';
+            let errorDetails = '🚫 PAGAMENTO REJEITADO:
+
+';
             pixValidation.errors.forEach((error, index) => {
-              errorDetails += (index + 1) + '. ' + error + '\n';
+              errorDetails += `${index + 1}. ${error}
+`;
             });
             
-            errorDetails += '\n📋 REQUISITOS PARA APROVAÇÃO:\n';
-            errorDetails += '• Favorecido: GUSTAVO SANTOS RIBEIRO ou GUSTAVO S RIBEIRO\n';
-            errorDetails += '• Valor mínimo: R$ 10,00\n';
-            errorDetails += '• Comprovante enviado em até 5 minutos\n';
-            errorDetails += '• ID de transação único\n';
+            errorDetails += '
+📋 REQUISITOS PARA APROVAÇÃO:
+';
+            errorDetails += '✅ Favorecido: GUSTAVO SANTOS RIBEIRO ou GUSTAVO S RIBEIRO
+';
+            errorDetails += '✅ Valor mínimo: R$ 10,00
+';
+            errorDetails += '✅ Comprovante enviado em até 5 minutos
+';
+            errorDetails += '✅ ID de transação único (não repetido)
+
+';
+            errorDetails += '🔄 SOLUÇÃO: Faça um novo pagamento atendendo todos os requisitos acima.';
             
             setValidationDetails(errorDetails);
-            return; // Para aqui - não continua
+            return;
           }
           
-          // Se PIX válido, adicionar info aos detalhes
-          console.log('✅ Validação PIX aprovada:', pixValidation.extractedData);
+          // PAGAMENTO PIX VÁLIDO - salvar dados
+          console.log('✅ Pagamento PIX validado!');
           
-          // Salvar dados da transação
-          localStorage.setItem('ultimaTransacaoPix', JSON.stringify({
+          // Salvar transação
+          localStorage.setItem('ultimoPagamentoValido', JSON.stringify({
             transactionId: pixValidation.extractedData.transactionId,
             amount: pixValidation.extractedData.amount,
-            validatedAt: new Date().toISOString()
+            validatedAt: new Date().toISOString(),
+            fileName: file.name
           }));
+          
+          // Adicionar info PIX aos detalhes se for sucesso
+          if (resultado.valido) {
+            let currentDetails = validationDetails || '';
+            currentDetails += '
+
+✅ VALIDAÇÃO PIX APROVADA
+';
+            currentDetails += `• Favorecido: ${pixValidation.extractedData.beneficiary || 'Validado'}
+`;
+            currentDetails += `• Valor: R$ ${pixValidation.extractedData.amount?.toFixed(2) || 'Validado'}
+`;
+            currentDetails += `• ID: ${pixValidation.extractedData.transactionId || 'Gerado'}
+`;
+            setValidationDetails(currentDetails);
+          }
         }
       } catch (pixError) {
-        console.warn('Erro na validação PIX:', pixError);
-        // Continua com validação normal se der erro
+        console.warn('⚠️ Erro na validação PIX:', pixError);
+        // Continua com validação normal
       }
-      // ========== FIM VALIDAÇÃO PIX ==========
+      // ===== FIM VALIDAÇÕES PIX =====
       
       if (resultado.valido) {
         setValidationStatus('success');
