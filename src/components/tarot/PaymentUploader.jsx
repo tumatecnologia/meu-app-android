@@ -155,14 +155,26 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
   // 🔴 SIMULAÇÃO DE EXTRAÇÃO OCR (PARA TESTES)
   // ============================================
   const simulateOCRDataExtraction = async (file) => {
-    // EM PRODUÇÃO: Substituir por OCR real
-    // Por enquanto, retorna dados simulados baseados em testes
+    // 🔴 CORREÇÃO: Extrair data do nome do arquivo
+    let extractedDate = new Date().toISOString().split("T")[0]; // padrão: data atual
+    
+    // Tentar extrair data do nome do arquivo (ex: "WhatsApp Image 2025-12-12 at 12.48.55.jpeg")
+    const fileName = file.name;
+    const dateMatch = fileName.match(/(\d{4})-(\d{2})-(\d{2})/);
+    
+    if (dateMatch) {
+      // Formato: YYYY-MM-DD encontrado no nome do arquivo
+      extractedDate = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+      console.log("📅 Data extraída do nome do arquivo:", extractedDate);
+    } else {
+      console.log("⚠️ Data não encontrada no nome do arquivo, usando data atual");
+    }
     
     return {
-      beneficiary: 'GUSTAVO SANTOS RIBEIRO', // Ou 'JOÃO SILVA' para testar situação 2
+      beneficiary: "GUSTAVO SANTOS RIBEIRO", // Ou "JOÃO SILVA" para testar situação 2
       amount: 15.00, // Ou 5.00 para testar situação 3
-      date: new Date().toISOString().split('T')[0], // Ou data de ontem para testar situação 4
-      transactionId: 'PIX_' + Date.now(), // Usar 'DUP_TEST' para testar situação 1
+      date: extractedDate, // 🔴 AGORA: Data extraída do arquivo
+      transactionId: "PIX_" + Date.now(), // Usar "DUP_TEST" para testar situação 1
       sourceFile: file.name
     };
   };
