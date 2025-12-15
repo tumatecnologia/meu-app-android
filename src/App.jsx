@@ -1,10 +1,19 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import DailyCard from './pages/DailyCard';
+import ThreeCardsReading from './pages/ThreeCardsReading';
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+function App() {
+  return (
+    <Router basename="/meu-app-android">
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/daily-card" element={<DailyCard />} />
+        <Route path="/three-cards-reading" element={<ThreeCardsReading />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
