@@ -9,7 +9,6 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, theme, onBackToHome
   const [errorMessage, setErrorMessage] = useState('');
   const [copied, setCopied] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(5 * 60); // 5 minutos em segundos
   const [startTime, setStartTime] = useState(null);
 
   const pixKey = `12996764694`;
@@ -162,7 +161,6 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, theme, onBackToHome
                   timeLeft > 60 ? 'text-amber-300' :
                   'text-red-300'
                 }`}>
-                  {timeLeft > 60 ? 'TEMPO RESTANTE:' : 'TEMPO CRÍTICO!'}
                 </span>
               </div>
               <div className={`px-3 py-1 rounded-full font-mono font-bold text-lg ${
@@ -174,7 +172,6 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, theme, onBackToHome
               </div>
             </div>
             <p className="text-gray-300 text-xs mt-1">
-              Envie o comprovante em até <span className="font-bold">5 minutos</span> após pagar
             </p>
           </div>
         </div>
@@ -234,10 +231,8 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, theme, onBackToHome
               </div>
 
               <p className="text-gray-300 text-xs md:text-sm">
-                2. <span className="text-amber-300 font-bold">IMEDIATAMENTE</span> tire print da confirmação
               </p>
               <p className="text-gray-400 text-xs mt-1">
-                ⚡ Faça tudo em menos de 2 minutos para garantir
               </p>
             </div>
           </div>
@@ -246,7 +241,6 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, theme, onBackToHome
           <div>
             <h3 className="text-sm md:text-base font-semibold text-white mb-3 flex items-center gap-2">
               <Clock className="w-4 h-4 text-amber-400" />
-              ENVIE AGORA (TEMPO CORRENDO!)
             </h3>
             
             {/* Mensagem de erro */}

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, Camera, Image as ImageIcon, CheckCircle, AlertCircle, Loader2, Info, Clock, Zap, Ban } from 'lucide-react';
-import { validatePayment } from "../../services/pixValidator.js";
+import { Upload, X, Camera, Image as ImageIcon, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { validatePayment } from "../../services/paymentControl";
 
 const PaymentUploader = ({ onValidationComplete, onCancel }) => {
   const [preview, setPreview] = useState(null);
@@ -8,7 +8,6 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
   const [validationStatus, setValidationStatus] = useState(null);
   const [validationMessage, setValidationMessage] = useState('');
   const [validationDetails, setValidationDetails] = useState('');
-  const [tempoExcedido, setTempoExcedido] = useState(null);
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
 
@@ -23,7 +22,6 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
     setValidationStatus('validating');
     setValidationMessage('Processando comprovante...');
     setValidationDetails('Verificando validade do comprovante...');
-    setTempoExcedido(null);
 
     // Validações básicas
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -53,7 +51,7 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
   };
 
   // ============================================
-  // 🔴 NOVO MÉTODO: VALIDAÇÃO COM SISTEMA PIX
+  // 🔴 VALIDAÇÃO COM SISTEMA PIX
   // ============================================
   const validateFileWithPIXSystem = async (file) => {
     try {
@@ -62,31 +60,26 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
       setValidationDetails('Extraindo informações do PIX...');
 
       // Simulação de extração de dados do comprovante
-      // EM PRODUÇÃO: Aqui você usaria o OCR real (paymentControl.js)
       const extractedData = await simulateOCRDataExtraction(file);
       
       console.log('📋 Dados extraídos (simulação):', extractedData);
 
-      // ============================================
-      // 🔴 VALIDAÇÃO COM NOVO SISTEMA PIX
-      // ============================================
+      // VALIDAÇÃO COM NOVO SISTEMA PIX
       setValidationMessage('Validando com sistema PIX...');
-      setValidationDetails('Aplicando as 5 situações de validação...');
+      setValidationDetails('Aplicando validações do sistema...');
 
       const pixValidationResult = await validatePayment({
         beneficiary: extractedData.beneficiary,
         amount: extractedData.amount.toString(),
-        date: extractedData.date || new Date().toISOString().split('T')[0],
+        date: extractedData.date,
         transactionId: extractedData.transactionId || 'PIX_' + Date.now()
       });
 
       console.log('📊 Resultado validação PIX:', pixValidationResult);
 
-      // ============================================
-      // 🔴 APLICAR RESULTADO BASEADO NAS 5 SITUAÇÕES
-      // ============================================
+      // APLICAR RESULTADO
       if (pixValidationResult.approved) {
-        // ✅ SITUAÇÃO 5: TUDO OK
+        // ✅ TUDO OK
         setValidationStatus('success');
         setValidationMessage('✅ Comprovante validado com sucesso!');
         setValidationDetails('Consulta liberada. Aguarde sua leitura...');
@@ -115,7 +108,7 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
         }, 1500);
 
       } else {
-        // ❌ SITUAÇÕES 1-4: RECUSADO
+        // ❌ RECUSADO
         setValidationStatus('error');
         
         // Personalizar mensagem baseada na situação específica
@@ -152,11 +145,11 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
   };
 
   // ============================================
-  // 🔴 SIMULAÇÃO DE EXTRAÇÃO OCR (PARA TESTES)
+  // 🔴 SIMULAÇÃO DE EXTRAÇÃO OCR (CORRIGIDA)
   // ============================================
   const simulateOCRDataExtraction = async (file) => {
     // 🔴 CORREÇÃO: Extrair data do nome do arquivo
-    let extractedDate = new Date().toISOString().split("T")[0]; // padrão: data atual
+    let extractedDate = new Date().toISOString().split('T')[0]; // padrão: data atual
     
     // Tentar extrair data do nome do arquivo (ex: "WhatsApp Image 2025-12-12 at 12.48.55.jpeg")
     const fileName = file.name;
@@ -165,64 +158,22 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
     if (dateMatch) {
       // Formato: YYYY-MM-DD encontrado no nome do arquivo
       extractedDate = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
-      console.log("📅 Data extraída do nome do arquivo:", extractedDate);
+      console.log('📅 Data extraída do nome do arquivo:', extractedDate);
     } else {
-      console.log("⚠️ Data não encontrada no nome do arquivo, usando data atual");
+      console.log('⚠️ Data não encontrada no nome do arquivo, usando data atual');
     }
     
     return {
-      beneficiary: "GUSTAVO SANTOS RIBEIRO", // Ou "JOÃO SILVA" para testar situação 2
+      beneficiary: 'GUSTAVO SANTOS RIBEIRO', // Ou 'JOÃO SILVA' para testar situação 2
       amount: 15.00, // Ou 5.00 para testar situação 3
       date: extractedDate, // 🔴 AGORA: Data extraída do arquivo
-      transactionId: "PIX_" + Date.now(), // Usar "DUP_TEST" para testar situação 1
+      transactionId: 'PIX_' + Date.now(), // Usar 'DUP_TEST' para testar situação 1
       sourceFile: file.name
     };
   };
 
   // ============================================
-  // 🔴 TESTES DAS 5 SITUAÇÕES (PARA DESENVOLVIMENTO)
-  // ============================================
-  const testPIXSituation = async (situation) => {
-    const hoje = new Date().toISOString().split('T')[0];
-    const ontem = new Date();
-    ontem.setDate(ontem.getDate() - 1);
-    const ontemStr = ontem.toISOString().split('T')[0];
-    
-    const testData = {
-      1: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '15.00', date: hoje, transactionId: 'DUP_TEST' },
-      2: { beneficiary: 'JOÃO SILVA', amount: '15.00', date: hoje, transactionId: 'TEST_NOME_' + Date.now() },
-      3: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '5.00', date: hoje, transactionId: 'TEST_VALOR_' + Date.now() },
-      4: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '15.00', date: ontemStr, transactionId: 'TEST_DATA_' + Date.now() },
-      5: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '15.00', date: hoje, transactionId: 'TEST_OK_' + Date.now() }
-    };
-    
-    setValidationStatus('validating');
-    setValidationMessage(`Testando situação ${situation}...`);
-    setValidationDetails('Simulando validação PIX...');
-    
-    try {
-      const result = await validatePayment(testData[situation]);
-      
-      console.log(`Teste situação ${situation}:`, result);
-      
-      if (result.approved) {
-        setValidationStatus('success');
-        setValidationMessage('✅ Teste APROVADO');
-        setValidationDetails(`Situação ${situation}: ${result.details}`);
-      } else {
-        setValidationStatus('error');
-        setValidationMessage('❌ Teste RECUSADO');
-        setValidationDetails(`Situação ${situation}: ${result.details}`);
-      }
-    } catch (error) {
-      setValidationStatus('error');
-      setValidationMessage('❌ Erro no teste');
-      setValidationDetails(error.message);
-    }
-  };
-
-  // ============================================
-  // RENDERIZAÇÃO (mantida do original)
+  // RENDERIZAÇÃO
   // ============================================
   const resetUpload = () => {
     setPreview(null);
@@ -230,7 +181,6 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
     setValidationStatus(null);
     setValidationMessage('');
     setValidationDetails('');
-    setTempoExcedido(null);
     if (cameraInputRef.current) cameraInputRef.current.value = '';
     if (galleryInputRef.current) galleryInputRef.current.value = '';
   };
@@ -243,9 +193,27 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
     galleryInputRef.current?.click();
   };
 
-  // Render do componente (mantido do original com pequenas adaptações)
   return (
     <div className="w-full">
+      {/* Instruções de pagamento */}
+      <div className="mb-6 p-4 bg-gradient-to-r from-purple-900/30 to-violet-900/20 rounded-xl border border-purple-700/30">
+        <h3 className="text-lg font-semibold text-white mb-3">Como pagar:</h3>
+        <ol className="space-y-2 text-sm text-purple-200">
+          <li className="flex items-start">
+            <span className="inline-block w-6 h-6 bg-purple-600 rounded-full text-center mr-2 flex-shrink-0">1</span>
+            Realize o PIX para: <strong className="text-white ml-1">GUSTAVO SANTOS RIBEIRO</strong>
+          </li>
+          <li className="flex items-start">
+            <span className="inline-block w-6 h-6 bg-purple-600 rounded-full text-center mr-2 flex-shrink-0">2</span>
+            Valor: <strong className="text-white ml-1">R$ 15,00</strong>
+          </li>
+          <li className="flex items-start">
+            <span className="inline-block w-6 h-6 bg-purple-600 rounded-full text-center mr-2 flex-shrink-0">3</span>
+            Tire print da confirmação do pagamento
+          </li>
+        </ol>
+      </div>
+
       {/* Área de Upload */}
       {!preview && !validationStatus && (
         <div className="border-2 border-dashed border-purple-400/50 rounded-2xl p-8 text-center bg-purple-950/30 mb-6">
@@ -334,33 +302,15 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
             )}
 
             {validationDetails && (
-              <p className="text-sm mt-2 whitespace-pre-line ${
+              <p className={`text-sm mt-2 whitespace-pre-line ${
                 validationStatus === 'success' ? 'text-green-300' :
                 validationStatus === 'error' ? 'text-red-300' :
                 'text-amber-300'
-              }">
+              }`}>
                 {validationDetails}
               </p>
             )}
           </div>
-
-          {/* Botão de Teste (apenas desenvolvimento) */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
-              <p className="text-sm text-gray-300 mb-2">🧪 Testes PIX (dev):</p>
-              <div className="flex flex-wrap gap-2">
-                {[1,2,3,4,5].map(num => (
-                  <button
-                    key={num}
-                    onClick={() => testPIXSituation(num)}
-                    className="px-3 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded"
-                  >
-                    Situação {num}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -376,6 +326,14 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
           Cancelar
         </button>
       )}
+
+      {/* Rodapé informativo */}
+      <div className="mt-6 pt-4 border-t border-purple-800/30">
+        <p className="text-xs text-purple-400 text-center">
+          <strong>Atenção:</strong> Não aceitamos pagamentos duplicados. 
+          Caso o comprovante seja rejeitado, por favor, realize um novo pagamento.
+        </p>
+      </div>
     </div>
   );
 };
