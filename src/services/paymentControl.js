@@ -230,7 +230,7 @@ class PaymentControlService {
     // ... código existente ...
     return {
       nomeEncontrado: 'GUSTAVO SANTOS RIBEIRO',
-      valor: 15.00,
+      valor: 10.00,
       data: new Date().toLocaleDateString('pt-BR'),
       dataHora: new Date(),
       hora: new Date().toLocaleTimeString('pt-BR'),

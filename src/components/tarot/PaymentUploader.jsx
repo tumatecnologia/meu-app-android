@@ -170,7 +170,7 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
     // Para testes: usar valor errado se arquivo contiver "erro_valor"
     const amount = fileName.toLowerCase().includes('erro_valor') 
       ? 5.00 
-      : 15.00; // Valor normal (acima do mínimo)
+      : 10.00; // Valor normal (acima do mínimo)
     
     // Para testes: usar transação duplicada se arquivo contém "duplicado"
     const transactionId = fileName.toLowerCase().includes('duplicado') 
@@ -196,11 +196,11 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
     const ontemStr = ontem.toISOString().split('T')[0];
     
     const testData = {
-      1: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '15.00', date: hoje, transactionId: 'DUP_TEST' },
-      2: { beneficiary: 'JOÃO SILVA', amount: '15.00', date: hoje, transactionId: 'TEST_NOME_' + Date.now() },
+      1: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '10.00', date: hoje, transactionId: 'DUP_TEST' },
+      2: { beneficiary: 'JOÃO SILVA', amount: '10.00', date: hoje, transactionId: 'TEST_NOME_' + Date.now() },
       3: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '5.00', date: hoje, transactionId: 'TEST_VALOR_' + Date.now() },
-      4: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '15.00', date: ontemStr, transactionId: 'TEST_DATA_' + Date.now() },
-      5: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '15.00', date: hoje, transactionId: 'TEST_OK_' + Date.now() }
+      4: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '10.00', date: ontemStr, transactionId: 'TEST_DATA_' + Date.now() },
+      5: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '10.00', date: hoje, transactionId: 'TEST_OK_' + Date.now() }
     };
     
     setValidationStatus('validating');

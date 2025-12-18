@@ -34,7 +34,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Pagamento via PIX</h2>
-                <p className="text-sm text-purple-300">R$ 15,00 - Consulta de Tarô Completa</p>
+                <p className="text-sm text-purple-300">R$ 10,00 - Consulta de Tarô Completa</p>
               </div>
             </div>
             <button
@@ -67,7 +67,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                       </div>
                       <div>
                         <p className="text-sm text-purple-300 mb-1">Valor</p>
-                        <p className="text-2xl font-bold text-white">R$ 15,00</p>
+                        <p className="text-2xl font-bold text-white">R$ 10,00</p>
                       </div>
                     </div>
                   </div>
