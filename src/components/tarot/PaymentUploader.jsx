@@ -107,7 +107,7 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
 
         // Notificar componente pai após delay
         setTimeout(() => {
-          console.log('🚀 Liberando consulta...', successData);
+          console.log('�� Liberando consulta...', successData);
           if (onValidationComplete) {
             onValidationComplete(successData);
           }
