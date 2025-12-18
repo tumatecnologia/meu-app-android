@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Calendar, MessageSquare, ArrowRight, ArrowLeft } from 'lucide-react';
+import { User, Calendar, MessageSquare, ArrowRight, ArrowLeft, Heart, Briefcase, DollarSign, Sparkles, HeartPulse, Users, Plane, Bell, MessageCircle, Scale } from 'lucide-react';
 
 const TarotForm = ({ themes, selectedTheme, onThemeSelect, onFormSubmit, onBack }) => {
   const [formData, setFormData] = useState({
@@ -8,124 +8,16 @@ const TarotForm = ({ themes, selectedTheme, onThemeSelect, onFormSubmit, onBack 
     question: ''
   });
 
-  const [dateError, setDateError] = useState('');
-  const [dateTouched, setDateTouched] = useState(false);
-
-  // Função para formatar data enquanto digita (DD/MM/AAAA)
-  const formatDateInput = (value) => {
-    // Remove tudo que não é número
-    let numbers = value.replace(/\D/g, '');
-    
-    // Limita a 8 dígitos (DDMMAAAA)
-    if (numbers.length > 8) {
-      numbers = numbers.substring(0, 8);
-    }
-    
-    // Aplica máscara DD/MM/AAAA
-    if (numbers.length <= 2) {
-      return numbers;
-    } else if (numbers.length <= 4) {
-      return numbers.substring(0, 2) + '/' + numbers.substring(2, 4);
-    } else {
-      return numbers.substring(0, 2) + '/' + numbers.substring(2, 4) + '/' + numbers.substring(4, 8);
-    }
-  };
-
-  // Função para validar data
-  const validateDate = (dateStr) => {
-    if (!dateStr || dateStr.length < 10) {
-      return { valid: false, error: 'Data incompleta (DD/MM/AAAA)' };
-    }
-    
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) {
-      return { valid: false, error: 'Formato inválido' };
-    }
-    
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10);
-    const year = parseInt(parts[2], 10);
-    
-    // Validações básicas
-    if (isNaN(day) || isNaN(month) || isNaN(year)) {
-      return { valid: false, error: 'Digite apenas números' };
-    }
-    
-    if (year < 1900 || year > new Date().getFullYear()) {
-      return { valid: false, error: `Ano inválido (1900-${new Date().getFullYear()})` };
-    }
-    
-    if (month < 1 || month > 12) {
-      return { valid: false, error: 'Mês inválido (1-12)' };
-    }
-    
-    // Valida dias do mês
-    const daysInMonth = new Date(year, month, 0).getDate();
-    if (day < 1 || day > daysInMonth) {
-      return { valid: false, error: 'Dia inválido para este mês' };
-    }
-    
-    // Verifica se é maior de 12 anos (idade mínima razoável para tarô)
-    const birthDate = new Date(year, month - 1, day);
-    const today = new Date();
-    const age = today.getFullYear() - year;
-    
-    if (age < 12) {
-      return { valid: false, error: 'É necessário ter pelo menos 12 anos' };
-    }
-    
-    return { valid: true, error: '' };
-  };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
-    if (name === 'birthDate') {
-      // Formata a data enquanto digita
-      const formatted = formatDateInput(value);
-      setFormData(prev => ({
-        ...prev,
-        [name]: formatted
-      }));
-      
-      // Valida quando tiver 10 caracteres (DD/MM/AAAA)
-      if (formatted.length === 10) {
-        const validation = validateDate(formatted);
-        setDateError(validation.error);
-      } else if (dateTouched && formatted.length < 10) {
-        setDateError('Digite a data completa (DD/MM/AAAA)');
-      }
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
-
-  const handleDateBlur = () => {
-    setDateTouched(true);
-    if (formData.birthDate.length === 10) {
-      const validation = validateDate(formData.birthDate);
-      setDateError(validation.error);
-    } else if (formData.birthDate) {
-      setDateError('Digite a data completa (DD/MM/AAAA)');
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // Valida a data antes de submeter
-    if (formData.birthDate.length === 10) {
-      const validation = validateDate(formData.birthDate);
-      if (!validation.valid) {
-        setDateError(validation.error);
-        setDateTouched(true);
-        return;
-      }
-    }
-    
     if (selectedTheme && formData.name.trim() && formData.birthDate && formData.question.trim()) {
       onFormSubmit({
         ...formData,
@@ -138,11 +30,8 @@ const TarotForm = ({ themes, selectedTheme, onThemeSelect, onFormSubmit, onBack 
     onThemeSelect(themeId);
   };
 
-  // Verificar se o formulário está completo e válido
-  const isFormComplete = formData.name.trim() && 
-                        formData.birthDate.length === 10 && 
-                        formData.question.trim() && 
-                        !dateError;
+  // Verificar se o formulário está completo
+  const isFormComplete = formData.name.trim() && formData.birthDate && formData.question.trim();
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -184,7 +73,7 @@ const TarotForm = ({ themes, selectedTheme, onThemeSelect, onFormSubmit, onBack 
           </div>
         </div>
 
-        {/* Formulário Simplificado */}
+        {/* Formulário Simplificado (SEM EMAIL) */}
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 mb-8">
             {/* Nome */}
@@ -204,35 +93,20 @@ const TarotForm = ({ themes, selectedTheme, onThemeSelect, onFormSubmit, onBack 
               />
             </div>
 
-            {/* Data de Nascimento - AGORA COM INPUT DE TEXTO */}
+            {/* Data de Nascimento */}
             <div>
               <label className="text-purple-300 text-sm mb-2 flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 Data de nascimento *
-                <span className="text-xs text-purple-400 ml-auto">DD/MM/AAAA</span>
               </label>
               <input
-                type="text"
+                type="date"
                 name="birthDate"
                 value={formData.birthDate}
                 onChange={handleInputChange}
-                onBlur={handleDateBlur}
-                maxLength="10"
                 required
                 className="w-full bg-white/10 border border-purple-400/30 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
-                placeholder="DD/MM/AAAA"
-                inputMode="numeric"
               />
-              {dateError && (
-                <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
-                  ⚠️ {dateError}
-                </p>
-              )}
-              {!dateError && formData.birthDate.length === 10 && (
-                <p className="text-green-400 text-sm mt-1 flex items-center gap-1">
-                  ✅ Data válida
-                </p>
-              )}
             </div>
 
             {/* Pergunta */}
@@ -281,20 +155,11 @@ const TarotForm = ({ themes, selectedTheme, onThemeSelect, onFormSubmit, onBack 
 
         {/* Informações Simplificadas */}
         <div className="mt-8 pt-6 border-t border-purple-400/30">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-purple-300 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-amber-300">*</span>
-              <span>Campos obrigatórios</span>
-            </div>
-            <div className="hidden sm:block text-purple-300">•</div>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-amber-300" />
-              <span>Formato: <span className="font-bold text-amber-300">DD/MM/AAAA</span></span>
-            </div>
-            <div className="hidden sm:block text-purple-300">•</div>
-            <div className="flex items-center gap-2">
-              <span className="text-amber-300 font-bold">Mínimo R$ 10,00</span>
-            </div>
+          <div className="flex items-center justify-center gap-2 text-purple-300 text-sm">
+            <span className="text-amber-300">*</span>
+            <span>Campos obrigatórios</span>
+            <span className="text-purple-300">•</span>
+            <span className="text-amber-300 font-bold">Mínimo R$ 10,00</span>
           </div>
         </div>
       </div>
