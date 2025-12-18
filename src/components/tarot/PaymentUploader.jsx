@@ -76,7 +76,7 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
       const pixValidationResult = await validatePayment({
         beneficiary: extractedData.beneficiary,
         amount: extractedData.amount.toString(),
-        date: extractedData.date, // 🔴 USAR DATA EXTRAÍDA, SEM FALLBACK
+        date: extractedData.date, // USAR DATA EXTRAÍDA, SEM FALLBACK
         transactionId: extractedData.transactionId
       });
 
@@ -107,7 +107,7 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
 
         // Notificar componente pai após delay
         setTimeout(() => {
-          console.log('�� Liberando consulta...', successData);
+          console.log('🚀 Liberando consulta...', successData);
           if (onValidationComplete) {
             onValidationComplete(successData);
           }
@@ -147,7 +147,7 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
     // VALOR MÍNIMO CORRETO: R$ 10,00
     const valorMinimo = 10.00;
     
-    // 🔴 CORREÇÃO: Extrair data do nome do arquivo
+    // CORREÇÃO: Extrair data do nome do arquivo
     let extractedDate = new Date().toISOString().split('T')[0];
     
     // Tentar extrair data do nome do arquivo
@@ -170,7 +170,7 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
     // Para testes: usar valor errado se arquivo contiver "erro_valor"
     const amount = fileName.toLowerCase().includes('erro_valor') 
       ? 5.00 
-      : 10.00; // Valor normal (acima do mínimo)
+      : 10.00; // Valor normal (mínimo)
     
     // Para testes: usar transação duplicada se arquivo contém "duplicado"
     const transactionId = fileName.toLowerCase().includes('duplicado') 
@@ -180,64 +180,10 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
     return {
       beneficiary: beneficiary,
       amount: amount,
-      date: extractedDate, // 🔴 DATA EXTRAÍDA DO ARQUIVO
+      date: extractedDate, // DATA EXTRAÍDA DO ARQUIVO
       transactionId: transactionId,
       sourceFile: file.name
     };
-  };
-
-  // ============================================
-  // TESTES DAS 5 SITUAÇÕES (PARA DESENVOLVIMENTO)
-  // ============================================
-  const testPIXSituation = async (situation) => {
-    const hoje = new Date().toISOString().split('T')[0];
-    const ontem = new Date();
-    ontem.setDate(ontem.getDate() - 1);
-    const ontemStr = ontem.toISOString().split('T')[0];
-    
-    const testData = {
-      1: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '10.00', date: hoje, transactionId: 'DUP_TEST' },
-      2: { beneficiary: 'JOÃO SILVA', amount: '10.00', date: hoje, transactionId: 'TEST_NOME_' + Date.now() },
-      3: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '5.00', date: hoje, transactionId: 'TEST_VALOR_' + Date.now() },
-      4: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '10.00', date: ontemStr, transactionId: 'TEST_DATA_' + Date.now() },
-      5: { beneficiary: 'GUSTAVO SANTOS RIBEIRO', amount: '10.00', date: hoje, transactionId: 'TEST_OK_' + Date.now() }
-    };
-    
-    setValidationStatus('validating');
-    setValidationMessage(`Testando situação ${situation}...`);
-    setValidationDetails('Simulando validação PIX...');
-    
-    try {
-      const result = await validatePayment(testData[situation]);
-      
-      console.log(`Teste situação ${situation}:`, result);
-      
-      if (result.approved) {
-        setValidationStatus('success');
-        setValidationMessage('✅ Teste APROVADO');
-        setValidationDetails(`Situação ${situation}: ${result.details}`);
-        
-        // Liberar consulta em teste de sucesso
-        setTimeout(() => {
-          if (onValidationComplete) {
-            onValidationComplete({
-              liberado: true,
-              aprovado: true,
-              mensagem: 'Teste aprovado',
-              timestamp: new Date().toISOString()
-            });
-          }
-        }, 1500);
-      } else {
-        setValidationStatus('error');
-        setValidationMessage('❌ Teste RECUSADO');
-        setValidationDetails(`Situação ${situation}: ${result.details}`);
-      }
-    } catch (error) {
-      setValidationStatus('error');
-      setValidationMessage('❌ Erro no teste');
-      setValidationDetails(error.message);
-    }
   };
 
   // ============================================
@@ -365,24 +311,6 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
               </p>
             )}
           </div>
-
-          {/* Botão de Teste (apenas desenvolvimento) */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
-              <p className="text-sm text-gray-300 mb-2">🧪 Testes PIX (dev):</p>
-              <div className="flex flex-wrap gap-2">
-                {[1,2,3,4,5].map(num => (
-                  <button
-                    key={num}
-                    onClick={() => testPIXSituation(num)}
-                    className="px-3 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded"
-                  >
-                    Situação {num}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
