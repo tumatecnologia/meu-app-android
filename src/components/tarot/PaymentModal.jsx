@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CreditCard, X, Copy, Check } from 'lucide-react';
 import PaymentUploader from './PaymentUploader';
-import QRCodePix from './QRCodePix';
 
 const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme }) => {
   const [stage, setStage] = useState('instructions');
@@ -26,14 +25,67 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme
 
   const renderInstructions = () => (
     <>
-      <div className="mb-8">
-        <QRCodePix />
+      <div className="mb-8 p-4 bg-gradient-to-r from-purple-900/30 to-violet-900/20 rounded-xl border border-purple-700/30">
+        <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+          <CreditCard className="w-5 h-5 text-purple-400" />
+          Dados para PIX
+        </h3>
+        
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm text-purple-300 mb-1">Chave PIX (Telefone)</p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-black/30 border border-purple-600/30 rounded-lg p-3">
+                <p className="font-mono text-xl font-bold text-white text-center">
+                  12996764694
+                </p>
+              </div>
+              <button
+                onClick={handleCopyPix}
+                className={`p-3 rounded-lg transition-all ${copied ? 'bg-green-600' : 'bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700'}`}
+                title="Copiar chave PIX"
+              >
+                {copied ? (
+                  <Check className="w-5 h-5 text-white" />
+                ) : (
+                  <Copy className="w-5 h-5 text-white" />
+                )}
+              </button>
+            </div>
+            {copied && (
+              <p className="text-xs text-green-400 mt-1 animate-pulse">
+                ✅ Chave copiada para a área de transferência!
+              </p>
+            )}
+          </div>
+
+          <div>
+            <p className="text-sm text-purple-300 mb-1">Nome do favorecido</p>
+            <div className="bg-purple-900/30 p-3 rounded-lg">
+              <p className="font-bold text-white text-center">
+                GUSTAVO SANTOS RIBEIRO
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm text-purple-300 mb-1">Valor da consulta</p>
+            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-lg p-4">
+              <p className="text-3xl font-bold text-white text-center">
+                R$ 10,00
+              </p>
+              <p className="text-xs text-amber-300 text-center mt-1">
+                ⚠️ Valor mínimo: R$ 10,00 | Valor abaixo será recusado
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <span className="text-amber-400">📋</span>
-          Como usar a chave PIX
+          Como pagar
         </h3>
         <ol className="space-y-3">
           <li className="flex items-start gap-3">
@@ -70,6 +122,15 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme
             <div>
               <p className="text-white font-medium">Digite o valor: <strong>R$ 10,00</strong></p>
               <p className="text-sm text-gray-400">Valor mínimo para liberar a consulta</p>
+            </div>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="flex-shrink-0 w-6 h-6 bg-gradient-to-r from-purple-600 to-violet-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+              5
+            </span>
+            <div>
+              <p className="text-white font-medium">Confirme o pagamento</p>
+              <p className="text-sm text-gray-400">Salve o comprovante para enviar abaixo</p>
             </div>
           </li>
         </ol>
