@@ -138,7 +138,7 @@ const ThreeCardsReading = () => {
             animate={{ opacity: 1 }}
             className="mt-8"
           >
-            <TarotReading 
+            <TarotReading
               paymentId={paymentId}
               theme={selectedTheme}
               userData={userData}
@@ -152,3 +152,4 @@ const ThreeCardsReading = () => {
 };
 
 export default ThreeCardsReading;
+
