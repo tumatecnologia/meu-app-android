@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { CreditCard, X, Copy, Check } from 'lucide-react';
 import PaymentUploader from './PaymentUploader';
 
-const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme }) => {
+const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme, onNewPayment }) => {
   const [stage, setStage] = useState('instructions');
   const [copied, setCopied] = useState(false);
 
