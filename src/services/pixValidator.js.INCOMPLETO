@@ -57,8 +57,8 @@ const registerTransactionInDatabase = async (transactionData) => {
     const transactionRecord = {
       transactionId: transactionData.transactionId,
       beneficiary: transactionData.beneficiary || 'GUSTAVO SANTOS RIBEIRO',
-      amount: parseFloat(transactionData.amount) || 10.00,
-      paymentDate: transactionData.date || hoje,
+      amount: parseFloat(paymentData.amount) || 10.00,
+      paymentDate: paymentData.date || hoje,
       createdAt: new Date().toISOString(),
       status: 'APROVADO',
       validatedAt: new Date().toISOString()

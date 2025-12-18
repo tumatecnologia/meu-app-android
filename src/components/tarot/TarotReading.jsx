@@ -17,7 +17,7 @@ import {
   generateKeywords
 } from './tarotHelpers';
 
-const TarotReading = ({ theme, userData, onNewReading }) => {
+const TarotReading = ({ paymentId, theme, userData, onNewReading }) => {
   const [reading, setReading] = useState(null);
   const [loading, setLoading] = useState(true);
 

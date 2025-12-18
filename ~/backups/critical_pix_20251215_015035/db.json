@@ -15,15 +15,6 @@
       "beneficiary": "GUSTAVO SANTOS RIBEIRO",
       "paymentDate": "2025-12-15T01:37:07.771Z",
       "createdAt": "2025-12-15T01:37:07.821Z"
-    },
-    {
-      "id": "ff5b",
-      "transactionId": "TEST_DUP_1766088313324",
-      "beneficiary": "GUSTAVO SANTOS RIBEIRO",
-      "amount": 10,
-      "paymentDate": "2025-12-18",
-      "createdAt": "2025-12-18T20:05:13.324Z",
-      "status": "TESTE"
     }
   ]
 }
