@@ -1,8 +1,8 @@
-import QRCodePix from './QRCodePix';
 import React, { useState } from 'react';
-import { ze as motion } from 'framer-motion';
-import { CreditCard as CreditCardIcon, X, Copy, Check } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { CreditCard, X, Copy, Check } from 'lucide-react';
 import PaymentUploader from './PaymentUploader';
+import QRCodePix from './QRCodePix';
 
 const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme }) => {
   const [stage, setStage] = useState('instructions');
@@ -26,80 +26,13 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme
 
   const renderInstructions = () => (
     <>
-      <div className="mb-8 p-4 bg-gradient-to-r from-purple-900/30 to-violet-900/20 rounded-xl border border-purple-700/30">
-        <div className="flex flex-col gap-6">
-          <div className="flex-1">
-            <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-              <CreditCardIcon className="w-5 h-5 text-purple-400" />
-              Dados para PIX
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-purple-300 mb-1">Nome do favorecido</p>
-                <div className="flex items-center gap-2">
-                  <p className="font-mono text-lg font-bold text-white bg-purple-900/30 p-2 rounded flex-1">
-                    GUSTAVO SANTOS RIBEIRO
-                  </p>
-                  <button
-                    onClick={() => navigator.clipboard.writeText('GUSTAVO SANTOS RIBEIRO')}
-                    className="p-2 bg-purple-700 hover:bg-purple-600 rounded transition-colors"
-                    title="Copiar nome"
-                  >
-                    <Copy className="w-4 h-4 text-white" />
-                  </button>
-                </div>
-              </div>
-              
-              <div>
-                <p className="text-sm text-purple-300 mb-1">Chave PIX (Telefone)</p>
-                <div className="flex items-center gap-2">
-                  <p className="font-mono text-2xl font-bold text-white bg-gradient-to-r from-purple-600 to-violet-600 p-3 rounded flex-1">
-                    12996764694
-                  </p>
-                  <button
-                    onClick={handleCopyPix}
-                    className={`p-3 rounded transition-all ${copied ? 'bg-green-600' : 'bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700'}`}
-                    title="Copiar chave PIX"
-                  >
-                    {copied ? (
-                      <Check className="w-5 h-5 text-white" />
-                    ) : (
-                      <Copy className="w-5 h-5 text-white" />
-                    )}
-                  </button>
-                </div>
-                <p className="text-xs text-purple-400 mt-2">
-                  📱 Copie esta chave e cole no app do seu banco
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-purple-300 mb-1">Valor da consulta</p>
-                <p className="text-3xl font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-                  R$ 10,00
-                </p>
-                <p className="text-xs text-amber-300 mt-1">
-                  ⚠️ Valor mínimo: R$ 10,00 | Valor abaixo será recusado
-                </p>
-              </div>
-
-              <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-                <p className="text-sm text-amber-200 flex items-center gap-2">
-                  <span className="text-lg">💡</span>
-                  <span><strong>Dica:</strong> Após pagar, tire print ou salve o comprovante para enviar abaixo</span>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="mb-8">
         <QRCodePix />
       </div>
+
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <span className="text-amber-400">🔑</span>
+          <span className="text-amber-400">📋</span>
           Como usar a chave PIX
         </h3>
         <ol className="space-y-3">
@@ -142,6 +75,13 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme
         </ol>
       </div>
 
+      <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+        <p className="text-sm text-amber-200 flex items-center gap-2">
+          <span className="text-lg">💡</span>
+          <span><strong>Importante:</strong> Após realizar o pagamento, volte aqui para enviar o comprovante</span>
+        </p>
+      </div>
+
       <button
         onClick={() => setStage('upload')}
         className="w-full py-4 bg-gradient-to-r from-purple-600 to-violet-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-violet-700 transition-all shadow-lg shadow-purple-900/30 flex items-center justify-center gap-2"
@@ -154,9 +94,6 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme
 
   const renderUpload = () => (
     <div>
-      <div className="mb-8">
-        <QRCodePix />
-      </div>
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-white mb-2">Envie seu comprovante</h3>
         <p className="text-gray-400">Tire uma foto ou selecione da galeria</p>
@@ -170,9 +107,6 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme
 
   const renderSuccess = () => (
     <div className="text-center py-8">
-      <div className="mb-8">
-        <QRCodePix />
-      </div>
       <div className="mb-6">
         <div className="inline-flex p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mb-4">
           <span className="text-2xl">✅</span>
@@ -197,7 +131,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-r from-purple-600 to-violet-600 rounded-lg">
-                <CreditCardIcon className="w-6 h-6 text-white" />
+                <CreditCard className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Pagamento via PIX</h2>
