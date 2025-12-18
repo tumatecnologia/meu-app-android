@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, X, Copy, Check } from 'lucide-react';
+import { CreditCard, X, Copy, Check, Home } from 'lucide-react';
 import PaymentUploader from './PaymentUploader';
 
 const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme, onNewPayment }) => {
@@ -21,6 +21,13 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme
     navigator.clipboard.writeText('12996764694');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCancelToHome = () => {
+    // Fechar modal e ir para Home
+    onClose();
+    // Usar window.location para garantir que vai para Home
+    window.location.href = '/meu-app-android/';
   };
 
   const renderInstructions = () => (
@@ -161,7 +168,8 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme
       </div>
       <PaymentUploader 
         onValidationComplete={handleValidationComplete}
-        onCancel={() => setStage('instructions')}
+        onCancel={handleCancelToHome}
+        onNewPayment={onNewPayment}
       />
     </div>
   );
@@ -200,10 +208,11 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme
               </div>
             </div>
             <button
-              onClick={onClose}
+              onClick={handleCancelToHome}
               className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Voltar para Home"
             >
-              <X className="w-5 h-5 text-gray-400" />
+              <Home className="w-5 h-5 text-gray-400" />
             </button>
           </div>
         </div>

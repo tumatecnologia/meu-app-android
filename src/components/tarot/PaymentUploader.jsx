@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, Camera, Image as ImageIcon, CheckCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { Upload, X, Camera, Image as ImageIcon, CheckCircle, AlertCircle, Loader2, RefreshCw, Home } from 'lucide-react';
 import { validatePayment } from "../../services/pixValidator.js";
 
 const PaymentUploader = ({ onValidationComplete, onCancel, onNewPayment }) => {
@@ -322,10 +322,10 @@ const PaymentUploader = ({ onValidationComplete, onCancel, onNewPayment }) => {
               resetUpload();
               if (onCancel) onCancel();
             }}
-            className="w-full py-3 bg-gray-800 text-gray-300 rounded-xl font-medium hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 bg-gradient-to-r from-gray-700 to-gray-800 text-gray-200 rounded-xl font-medium hover:from-gray-800 hover:to-gray-900 transition-all flex items-center justify-center gap-2"
           >
-            <X className="w-4 h-4" />
-            Cancelar (voltar para Home)
+            <Home className="w-4 h-4" />
+            Voltar para Home (Página Inicial)
           </button>
           
           <button
@@ -336,12 +336,17 @@ const PaymentUploader = ({ onValidationComplete, onCancel, onNewPayment }) => {
             className="w-full py-3 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl font-medium hover:from-amber-700 hover:to-orange-700 transition-all flex items-center justify-center gap-2"
           >
             <RefreshCw className="w-4 h-4" />
-            Novo Pagamento (escolher outro tema)
+            Novo Pagamento (Escolher Outro Tema)
           </button>
           
-          <p className="text-xs text-center text-purple-400 mt-2">
-            ⚠️ Se o comprovante foi recusado, faça um novo pagamento com os dados corretos
-          </p>
+          <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <p className="text-xs text-center text-red-300">
+              ⚠️ Se o comprovante foi recusado, verifique:
+              <br/>• Data do pagamento (deve ser hoje)
+              <br/>• Valor mínimo (R$ 10,00) 
+              <br/>• Nome do favorecido (GUSTAVO SANTOS RIBEIRO)
+            </p>
+          </div>
         </div>
       )}
     </div>
