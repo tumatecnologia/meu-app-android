@@ -126,7 +126,7 @@ const ThreeCardsReading = () => {
               isOpen={step === 'payment'}
               onClose={() => setStep('form')}
               onPaymentConfirmed={handlePaymentConfirmed}
-              onBackToHome={handleBackToHome}
+              onBackToHome={handleBackToHome} onNewThemeSelection={() => setStep("form")}
               theme={selectedTheme}
             />
           </motion.div>

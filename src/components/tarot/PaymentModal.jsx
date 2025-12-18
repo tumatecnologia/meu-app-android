@@ -23,6 +23,15 @@ const PaymentModal = ({ isOpen, onClose, onPaymentConfirmed, onBackToHome, theme
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleNewPayment = () => {
+    console.log("🔄 Novo pagamento - voltando para seleção de tema");
+    if (onNewThemeSelection) {
+      onNewThemeSelection();
+    } else if (onClose) {
+      onClose();
+    }
+  };
+
   const handleCancelToHome = () => {
     // Fechar modal e ir para Home
     onClose();
