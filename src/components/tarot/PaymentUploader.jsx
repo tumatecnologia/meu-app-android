@@ -2,6 +2,18 @@ import React, { useState, useRef } from 'react';
 import { Upload, X, Camera, Image as ImageIcon, CheckCircle, AlertCircle, Loader2, RefreshCw, Home } from 'lucide-react';
 import { validatePayment } from "../../services/pixValidator.js";
 
+// Função para gerar hash simples de uma string
+const simpleHash = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(36).substring(0, 8);
+};
+
+
 const PaymentUploader = ({ onValidationComplete, onCancel, onNewPayment }) => {
   const [preview, setPreview] = useState(null);
   const [fileName, setFileName] = useState('');
@@ -173,9 +185,10 @@ const PaymentUploader = ({ onValidationComplete, onCancel, onNewPayment }) => {
       : 10.00; // Valor normal (mínimo)
     
     // Para testes: usar transação duplicada se arquivo contém "duplicado"
+    const fileHash = simpleHash(fileName + file.size + file.lastModified);
     const transactionId = fileName.toLowerCase().includes('duplicado') 
       ? 'DUP_TEST_123'
-      : 'PIX_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      : 'PIX_' + fileHash;
     
     return {
       beneficiary: beneficiary,

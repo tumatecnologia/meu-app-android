@@ -24,6 +24,24 @@
       "paymentDate": "2025-12-18",
       "createdAt": "2025-12-18T20:05:13.324Z",
       "status": "TESTE"
+    },
+    {
+      "id": "49e2",
+      "transactionId": "PIX_CRITICO_1766099187374",
+      "beneficiary": "GUSTAVO SANTOS RIBEIRO",
+      "amount": 10,
+      "paymentDate": "2025-12-18",
+      "createdAt": "2025-12-18T23:06:27.418Z",
+      "status": "APROVADO"
+    },
+    {
+      "id": "8107",
+      "transactionId": "TEST_MONITOR_1766099198",
+      "beneficiary": "TEST",
+      "amount": 10,
+      "paymentDate": "2025-12-18",
+      "createdAt": "2025-12-18T23:06:38+00:00",
+      "status": "TEST"
     }
   ]
 }
