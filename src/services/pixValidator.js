@@ -1,216 +1,157 @@
 /**
- * VALIDADOR DE PAGAMENTOS PIX - VERSÃO COMPLETA E FUNCIONAL
- * Sistema anti-duplicação garantido
+ * VALIDADOR DE PAGAMENTOS PIX - VERSÃO FINAL
+ * BLOQUEIA:
+ * 1. Comprovantes duplicados
+ * 2. Valores < R$ 10,00
+ * 3. Nomes diferentes de "GUSTAVO SANTOS RIBEIRO" ou "GUSTAVO S RIBEIRO"
+ * 4. Datas que não são hoje
  */
 
 console.log('✅ pixValidator.js carregado');
 
-const DB_API_URL = 'http://localhost:3000/transactions';
-const FALLBACK_KEY = 'pix_transactions_secure_v3';
+const VALOR_MINIMO = 10.00;
+const NOMES_PERMITIDOS = ['GUSTAVO SANTOS RIBEIRO', 'GUSTAVO S RIBEIRO', 'GUSTAVO S. RIBEIRO'];
+const DB_URL = 'http://localhost:3000/transactions';
+const STORAGE_KEY = 'pix_transactions';
 
-/**
- * Verifica se transação já existe - método robusto
- */
-const checkTransactionInDatabase = async (transactionId) => {
-  console.log(`[ANTI-DUPL] Verificando: ${transactionId}`);
-  
-  // PRIMEIRO: Tentar banco de dados (JSON Server)
-  try {
-    console.log(`[ANTI-DUPL] Tentando conexão com: ${DB_API_URL}`);
-    const response = await fetch(`${DB_API_URL}?transactionId=${encodeURIComponent(transactionId)}`);
-    
-    console.log(`[ANTI-DUPL] Resposta status: ${response.status}`);
-    
-    if (response.ok) {
-      const transactions = await response.json();
-      console.log(`[ANTI-DUPL] Encontradas no banco: ${transactions.length}`);
-      
-      if (transactions.length > 0) {
-        console.log(`[ANTI-DUPL] ❌ BLOQUEADO: Já existe no banco`);
-        return true;
-      }
-    } else {
-      console.log(`[ANTI-DUPL] ⚠️ Banco não respondeu OK: ${response.status}`);
-    }
-  } catch (error) {
-    console.log(`[ANTI-DUPL] ❌ Erro no fetch: ${error.message}`);
-  }
-  
-  // SEGUNDO: Fallback para localStorage
-  try {
-    const stored = localStorage.getItem(FALLBACK_KEY);
-    if (stored) {
-      const transactions = JSON.parse(stored);
-      const exists = transactions.includes(transactionId);
-      console.log(`[ANTI-DUPL] localStorage: ${exists ? 'EXISTE' : 'NÃO EXISTE'}`);
-      return exists;
-    }
-  } catch (error) {
-    console.log(`[ANTI-DUPL] ❌ Erro localStorage: ${error.message}`);
-  }
-  
-  console.log(`[ANTI-DUPL] ✅ Transação nova`);
-  return false;
-};
+// Normaliza nome
+function normalizarNome(nome) {
+    return nome.toUpperCase()
+        .replace(/[.,-]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\s/g, '');
+}
 
-/**
- * Registra transação em ambos os sistemas
- */
-const registerTransactionInDatabase = async (paymentData) => {
-  const transactionId = paymentData.transactionId;
-  console.log(`[REGISTRO] Registrando: ${transactionId}`);
-  
-  // 1. Registrar no banco
-  try {
-    const transactionRecord = {
-      transactionId: transactionId,
-      beneficiary: paymentData.beneficiary || 'GUSTAVO SANTOS RIBEIRO',
-      amount: parseFloat(paymentData.amount) || 10.00,
-      paymentDate: paymentData.date || new Date().toISOString().split('T')[0],
-      createdAt: new Date().toISOString(),
-      status: 'APROVADO',
-      source: 'web-app'
-    };
-    
-    const response = await fetch(DB_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(transactionRecord)
-    });
-    
-    console.log(`[REGISTRO] Banco status: ${response.status}`);
-    
-    if (response.ok) {
-      const result = await response.json();
-      console.log(`[REGISTRO] ✅ Registrado no banco com ID: ${result.id}`);
-    }
-  } catch (error) {
-    console.log(`[REGISTRO] ❌ Erro banco: ${error.message}`);
-  }
-  
-  // 2. Registrar no localStorage (IMPORTANTE: funciona offline)
-  try {
-    const stored = localStorage.getItem(FALLBACK_KEY);
-    let transactions = stored ? JSON.parse(stored) : [];
-    
-    if (!transactions.includes(transactionId)) {
-      transactions.push(transactionId);
-      localStorage.setItem(FALLBACK_KEY, JSON.stringify(transactions));
-      console.log(`[REGISTRO] ✅ localStorage atualizado. Total: ${transactions.length}`);
-    }
-  } catch (error) {
-    console.log(`[REGISTRO] ❌ Erro localStorage: ${error.message}`);
-  }
-  
-  console.log(`[REGISTRO] ✅ Registro completo para: ${transactionId}`);
-  return true;
-};
+// Verifica nome
+function nomeValido(nome) {
+    const normalizado = normalizarNome(nome);
+    const permitidos = NOMES_PERMITIDOS.map(normalizarNome);
+    return permitidos.includes(normalizado);
+}
 
-/**
- * Função principal de validação
- */
-export const validatePayment = async (paymentData) => {
-  console.log('='.repeat(50));
-  console.log(`[VALIDAÇÃO] Iniciada para: ${paymentData.transactionId}`);
-  
-  try {
-    const hoje = new Date().toISOString().split('T')[0];
-    const valorMinimo = 10.00;
+// Verifica data
+function dataEhHoje(dataStr) {
+    try {
+        const hoje = new Date().toISOString().split('T')[0];
+        const data = new Date(dataStr).toISOString().split('T')[0];
+        return data === hoje;
+    } catch {
+        return false;
+    }
+}
+
+// Verifica duplicata
+async function verificarDuplicata(id) {
+    try {
+        // Banco
+        const res = await fetch(`${DB_URL}?transactionId=${id}`);
+        if (res.ok) {
+            const dados = await res.json();
+            if (dados.length > 0) return true;
+        }
+    } catch (e) {
+        console.log('Erro banco:', e.message);
+    }
+    
+    // localStorage
+    try {
+        const local = localStorage.getItem(STORAGE_KEY);
+        if (local) {
+            const dados = JSON.parse(local);
+            if (dados.some(t => t.transactionId === id)) return true;
+        }
+    } catch (e) {
+        console.log('Erro localStorage:', e.message);
+    }
+    
+    return false;
+}
+
+// Registra transação
+async function registrarTransacao(dados) {
+    const registro = { ...dados, timestamp: new Date().toISOString() };
+    
+    // Banco
+    try {
+        await fetch(DB_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(registro)
+        });
+    } catch (e) {
+        console.log('Erro salvar banco:', e.message);
+    }
+    
+    // localStorage
+    try {
+        const local = localStorage.getItem(STORAGE_KEY);
+        const lista = local ? JSON.parse(local) : [];
+        lista.push(registro);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+    } catch (e) {
+        console.log('Erro salvar local:', e.message);
+    }
+}
+
+// VALIDAÇÃO PRINCIPAL
+export async function validatePayment(paymentData) {
+    console.log('=== VALIDAÇÃO INICIADA ===');
+    
+    // 1. DUPLICATA
+    const duplicata = await verificarDuplicata(paymentData.transactionId);
+    if (duplicata) {
+        return {
+            valid: false,
+            error: 'DUPLICATA',
+            details: 'Comprovante já foi usado'
+        };
+    }
+    
+    // 2. VALOR MÍNIMO (R$ 10,00)
     const valor = parseFloat(paymentData.amount);
-    
-    // ETAPA 1: VERIFICAÇÃO DE DUPLICATA (CRÍTICA)
-    console.log(`[VALIDAÇÃO] Etapa 1: Verificando duplicata...`);
-    const isDuplicate = await checkTransactionInDatabase(paymentData.transactionId);
-    
-    if (isDuplicate) {
-      console.log(`[VALIDAÇÃO] ❌❌❌ FALHOU: TRANSAÇÃO DUPLICADA ❌❌❌`);
-      return {
-        approved: false,
-        message: 'RECUSADO: Transação já utilizada',
-        details: `Este comprovante PIX já foi usado anteriormente. ID: ${paymentData.transactionId}`,
-        situation: 1,
-        timestamp: new Date().toISOString()
-      };
+    if (isNaN(valor)) {
+        return {
+            valid: false,
+            error: 'VALOR INVÁLIDO',
+            details: 'Valor não é número'
+        };
     }
-    console.log(`[VALIDAÇÃO] ✅ Etapa 1: Não é duplicata`);
     
-    // ETAPA 2: NOME DO FAVORECIDO
-    const nomeCorreto = 'GUSTAVO SANTOS RIBEIRO';
-    if (paymentData.beneficiary !== nomeCorreto) {
-      console.log(`[VALIDAÇÃO] ❌ Nome incorreto`);
-      return {
-        approved: false,
-        message: 'RECUSADO: Nome incorreto',
-        details: `Nome do favorecido não corresponde. Deve ser: ${nomeCorreto}`,
-        situation: 2,
-        timestamp: new Date().toISOString()
-      };
+    if (valor < VALOR_MINIMO) {
+        return {
+            valid: false,
+            error: 'VALOR INSUFICIENTE',
+            details: `Valor R$ ${valor.toFixed(2)} < mínimo R$ ${VALOR_MINIMO.toFixed(2)}`
+        };
     }
-    console.log(`[VALIDAÇÃO] ✅ Etapa 2: Nome correto`);
     
-    // ETAPA 3: VALOR MÍNIMO
-    if (valor < valorMinimo) {
-      console.log(`[VALIDAÇÃO] ❌ Valor insuficiente`);
-      return {
-        approved: false,
-        message: 'RECUSADO: Valor insuficiente',
-        details: `Valor mínimo não atingido. Mínimo: R$ ${valorMinimo.toFixed(2)}`,
-        situation: 3,
-        timestamp: new Date().toISOString()
-      };
+    // 3. NOME
+    if (!paymentData.payeeName || !nomeValido(paymentData.payeeName)) {
+        return {
+            valid: false,
+            error: 'NOME INVÁLIDO',
+            details: `Nome deve ser: ${NOMES_PERMITIDOS.join(' ou ')}`
+        };
     }
-    console.log(`[VALIDAÇÃO] ✅ Etapa 3: Valor suficiente`);
     
-    // ETAPA 4: DATA ATUAL
-    if (paymentData.date !== hoje) {
-      console.log(`[VALIDAÇÃO] ❌ Data incorreta`);
-      return {
-        approved: false,
-        message: 'RECUSADO: Data incorreta',
-        details: `Data da transação não é a data atual. Data do comprovante: ${paymentData.date}, Data atual: ${hoje}`,
-        situation: 4,
-        timestamp: new Date().toISOString()
-      };
+    // 4. DATA
+    if (!paymentData.paymentDate || !dataEhHoje(paymentData.paymentDate)) {
+        const hoje = new Date().toLocaleDateString('pt-BR');
+        return {
+            valid: false,
+            error: 'DATA INVÁLIDA',
+            details: `Data deve ser hoje (${hoje})`
+        };
     }
-    console.log(`[VALIDAÇÃO] ✅ Etapa 4: Data correta`);
     
-    // ETAPA 5: REGISTRAR TRANSAÇÃO (APÓS TODAS VALIDAÇÕES)
-    console.log(`[VALIDAÇÃO] Etapa 5: Registrando transação...`);
-    await registerTransactionInDatabase(paymentData);
-    
-    console.log(`[VALIDAÇÃO] 🎉🎉🎉 TODAS ETAPAS APROVADAS! 🎉🎉🎉`);
-    console.log(`[VALIDAÇÃO] ✅ Transação ${paymentData.transactionId} APROVADA`);
+    // TUDO OK - REGISTRAR
+    await registrarTransacao(paymentData);
     
     return {
-      approved: true,
-      message: 'APROVADO: Pagamento validado',
-      details: 'Comprovante aprovado em todas as verificações. Consulta liberada!',
-      situation: 5,
-      timestamp: new Date().toISOString(),
-      transactionId: paymentData.transactionId,
-      approvedAmount: valor
+        valid: true,
+        message: '✅ Pagamento validado!'
     };
-    
-  } catch (error) {
-    console.error(`[VALIDAÇÃO] 💥 ERRO CRÍTICO: ${error.message}`);
-    return {
-      approved: false,
-      message: 'ERRO: Validação falhou',
-      details: `Erro técnico: ${error.message}`,
-      situation: 'error',
-      timestamp: new Date().toISOString()
-    };
-  }
-};
-
-/**
- * Função para limpar transações (apenas desenvolvimento)
- */
-export const clearProcessedTransactions = () => {
-  localStorage.removeItem(FALLBACK_KEY);
-  console.log('[LIMPEZA] localStorage limpo');
-};
+}
 
 export default validatePayment;

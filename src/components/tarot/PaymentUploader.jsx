@@ -86,10 +86,10 @@ const PaymentUploader = ({ onValidationComplete, onCancel, onNewPayment }) => {
       setValidationDetails('Aplicando as 5 situações de validação...');
 
       const pixValidationResult = await validatePayment({
-        beneficiary: extractedData.beneficiary,
-        amount: extractedData.amount.toString(),
-        date: extractedData.date, // USAR DATA EXTRAÍDA, SEM FALLBACK
-        transactionId: extractedData.transactionId
+        transactionId: extractedData.transactionId,
+        amount: extractedData.amount,
+        payeeName: extractedData.beneficiary,
+        paymentDate: extractedData.date
       });
 
       console.log('📊 Resultado validação PIX:', pixValidationResult);
@@ -175,17 +175,27 @@ const PaymentUploader = ({ onValidationComplete, onCancel, onNewPayment }) => {
     }
     
     // Para testes: usar nome errado se arquivo contiver "erro_nome"
-    const beneficiary = fileName.toLowerCase().includes('erro_nome') 
-      ? 'JOÃO SILVA' 
-      : 'GUSTAVO SANTOS RIBEIRO';
-    
-    // Para testes: usar valor errado se arquivo contiver "erro_valor"
-    const amount = fileName.toLowerCase().includes('erro_valor') 
-      ? 5.00 
-      : 10.00; // Valor normal (mínimo)
-    
-    // Para testes: usar transação duplicada se arquivo contém "duplicado"
-    const fileHash = simpleHash(fileName + file.size + file.lastModified);
+  // Para testes: usar valor errado se arquivo contiver "erro_valor"
+  // ======================================================
+  // CORREÇÃO: EXTRAIR VALOR DO NOME DO ARQUIVO
+  // ======================================================
+  let amount = 10.00; // Valor padrão inicial
+  
+  // Tentar extrair valor do nome do arquivo
+  // Exemplos: "pix_10.50.jpg", "comprovante_15,00.png", "valor_7.99.pdf"
+  const valorMatch = fileName.match(/([0-9]+[,.][0-9]{2})/);
+  if (valorMatch) {
+    // Converter para número (substituir vírgula por ponto)
+    const valorStr = valorMatch[0].replace(",", ".");
+    amount = parseFloat(valorStr);
+    console.log(`💰 Valor extraído do nome: R$ ${amount.toFixed(2)}`);
+  } else if (fileName.toLowerCase().includes("erro_valor")) {
+    amount = 5.00; // Para testes explícitos de erro
+    console.log(`🧪 Teste de valor insuficiente: R$ ${amount.toFixed(2)}`);
+  }
+    // Hash ROBUSTO: nome + tamanho + MINUTO ATUAL (agrupa uploads próximos)
+    const fileHash = simpleHash(fileName + '_SIZE_' + file.size + '_MIN_' + Math.floor(timestamp / 60000));
+    console.log('✅ Hash gerado:', fileHash, 'Minuto:', Math.floor(timestamp / 60000));
     const transactionId = fileName.toLowerCase().includes('duplicado') 
       ? 'DUP_TEST_123'
       : 'PIX_' + fileHash;
