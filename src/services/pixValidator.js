@@ -1,37 +1,35 @@
 /**
- * VALIDADOR DE PAGAMENTOS PIX - VERSÃO 5.0 CORRIGIDA
- * BLOQUEIA:
- * 1. Comprovantes duplicados
- * 2. Valores < R$ 10,00
- * 3. Nomes diferentes de "GUSTAVO SANTOS RIBEIRO" ou "GUSTAVO S RIBEIRO"
- * 4. Datas que não são hoje
+ * VALIDADOR PIX - VERSÃO DEFINITIVA SEM TIMESTAMP
+ * Sistema anti-fraude completo para GitHub Pages
  */
 
-console.log('✅ pixValidator.js v5.0 carregado - CORRIGIDO PARA GITHUB PAGES');
+console.log('🔒 Validador PIX carregado - VERSÃO DEFINITIVA');
 
+// CONFIGURAÇÕES
 const VALOR_MINIMO = 10.00;
-const NOMES_PERMITIDOS = ['GUSTAVO SANTOS RIBEIRO', 'GUSTAVO S RIBEIRO', 'GUSTAVO S. RIBEIRO'];
-const STORAGE_KEY = 'pix_transactions_secure_v5';
+const NOMES_VALIDOS = [
+    'GUSTAVO SANTOS RIBEIRO',
+    'GUSTAVO S RIBEIRO', 
+    'GUSTAVO S. RIBEIRO'
+];
+const STORAGE_KEY = 'pix_transactions_final_v7';
 
-// Normaliza nome
+// Utilitários
 function normalizarNome(nome) {
-    if (!nome) return '';
-    return nome.toUpperCase()
+    return (nome || '').toUpperCase()
         .replace(/[.,-]/g, '')
         .replace(/\s+/g, ' ')
         .trim()
         .replace(/\s/g, '');
 }
 
-// Verifica nome
-function nomeValido(nome) {
-    const normalizado = normalizarNome(nome);
-    const permitidos = NOMES_PERMITIDOS.map(normalizarNome);
-    return permitidos.includes(normalizado);
+function validarNome(nome) {
+    const nomeNorm = normalizarNome(nome);
+    const validos = NOMES_VALIDOS.map(normalizarNome);
+    return validos.includes(nomeNorm);
 }
 
-// Verifica data
-function dataEhHoje(dataStr) {
+function dataEHoje(dataStr) {
     try {
         if (!dataStr) return false;
         const hoje = new Date().toISOString().split('T')[0];
@@ -42,62 +40,59 @@ function dataEhHoje(dataStr) {
     }
 }
 
-// Verifica duplicata (apenas localStorage para GitHub Pages)
-async function verificarDuplicata(id) {
-    console.log(`[ANTI-DUPL] Verificando: ${id}`);
+// Sistema anti-duplicação
+async function verificarDuplicado(id) {
+    console.log(`🔍 Verificando duplicata: ${id}`);
     
     try {
-        const local = localStorage.getItem(STORAGE_KEY);
-        if (local) {
-            const dados = JSON.parse(local);
-            const existe = dados.some(t => t.transactionId === id);
-            if (existe) {
-                console.log(`[ANTI-DUPL] ❌ BLOQUEADO: Já existe`);
+        const storage = localStorage.getItem(STORAGE_KEY);
+        if (storage) {
+            const transacoes = JSON.parse(storage);
+            const duplicata = transacoes.some(t => t.id === id);
+            if (duplicata) {
+                console.log(`❌ Duplicata encontrada: ${id}`);
                 return true;
             }
         }
     } catch (e) {
-        console.log('[ANTI-DUPL] Erro:', e.message);
+        console.error('Erro anti-duplicação:', e);
     }
     
-    console.log(`[ANTI-DUPL] ✅ Não encontrado`);
+    console.log(`✅ Não é duplicata: ${id}`);
     return false;
 }
 
-// Registra transação
 async function registrarTransacao(dados) {
     const registro = {
-        transactionId: dados.transactionId,
-        amount: dados.amount,
-        payeeName: dados.payeeName,
-        paymentDate: dados.paymentDate,
-        registeredAt: new Date().toISOString(),  // CORREÇÃO: registeredAt em vez de timestamp
-        fileName: dados.fileName || 'desconhecido'
+        id: dados.transactionId,
+        valor: dados.amount,
+        nome: dados.payeeName,
+        data: dados.paymentDate,
+        registroEm: new Date().toISOString(), // SEM TIMESTAMP
+        arquivo: dados.fileName || 'desconhecido'
     };
     
-    console.log(`[REGISTRO] Salvando: ${dados.transactionId}`);
-    
     try {
-        const local = localStorage.getItem(STORAGE_KEY);
-        const lista = local ? JSON.parse(local) : [];
+        const storage = localStorage.getItem(STORAGE_KEY);
+        const lista = storage ? JSON.parse(storage) : [];
         lista.push(registro);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
-        console.log(`[REGISTRO] ✅ Salvo no localStorage`);
+        console.log('✅ Transação registrada:', registro.id);
     } catch (e) {
-        console.log(`[REGISTRO] Erro: ${e.message}`);
+        console.error('Erro registro:', e);
     }
 }
 
-// VALIDAÇÃO PRINCIPAL - Versão simplificada para GitHub Pages
-export async function validatePayment(paymentData) {
-    console.log('='.repeat(50));
+// VALIDAÇÃO PRINCIPAL
+export async function validatePayment(dados) {
+    console.log('='.repeat(40));
     console.log('🔍 VALIDAÇÃO PIX INICIADA');
-    console.log('📊 Dados:', paymentData);
+    console.log('📊 Dados:', dados);
     
-    // 1. ANTI-DUPLICAÇÃO
+    // 1. Anti-duplicação
     console.log('1️⃣ Verificando duplicata...');
-    const duplicata = await verificarDuplicata(paymentData.transactionId);
-    if (duplicata) {
+    const duplicado = await verificarDuplicado(dados.transactionId);
+    if (duplicado) {
         console.log('❌ COMPROVANTE DUPLICADO');
         return {
             valid: false,
@@ -106,15 +101,15 @@ export async function validatePayment(paymentData) {
         };
     }
     
-    // 2. VALOR MÍNIMO (R$ 10,00)
+    // 2. Valor mínimo R$ 10,00
     console.log('2️⃣ Verificando valor mínimo...');
-    const valor = parseFloat(paymentData.amount);
+    const valor = parseFloat(dados.amount);
     if (isNaN(valor)) {
-        console.log('❌ VALOR NÃO É NÚMERO');
+        console.log('❌ VALOR INVÁLIDO');
         return {
             valid: false,
             error: 'VALOR INVÁLIDO',
-            details: 'O valor do comprovante não é válido.'
+            details: 'O valor não é um número válido.'
         };
     }
     
@@ -127,22 +122,22 @@ export async function validatePayment(paymentData) {
         };
     }
     
-    // 3. NOME DO FAVORECIDO
+    // 3. Nome do favorecido
     console.log('3️⃣ Verificando nome...');
-    if (!paymentData.payeeName || !nomeValido(paymentData.payeeName)) {
-        console.log(`❌ NOME INVÁLIDO: "${paymentData.payeeName}"`);
+    if (!dados.payeeName || !validarNome(dados.payeeName)) {
+        console.log(`❌ NOME INVÁLIDO: "${dados.payeeName}"`);
         return {
             valid: false,
             error: 'NOME DO FAVORECIDO INVÁLIDO',
-            details: `Nome deve ser: ${NOMES_PERMITIDOS.join(' ou ')}`
+            details: `Nome deve ser: ${NOMES_VALIDOS.join(' ou ')}`
         };
     }
     
-    // 4. DATA DO COMPROVANTE
+    // 4. Data do comprovante
     console.log('4️⃣ Verificando data...');
-    if (!paymentData.paymentDate || !dataEhHoje(paymentData.paymentDate)) {
+    if (!dados.paymentDate || !dataEHoje(dados.paymentDate)) {
         const hoje = new Date().toLocaleDateString('pt-BR');
-        console.log(`❌ DATA INVÁLIDA: "${paymentData.paymentDate}" (hoje é ${hoje})`);
+        console.log(`❌ DATA INVÁLIDA: "${dados.paymentDate}" (hoje: ${hoje})`);
         return {
             valid: false,
             error: 'DATA INVÁLIDA',
@@ -150,13 +145,13 @@ export async function validatePayment(paymentData) {
         };
     }
     
-    // TUDO OK - REGISTRAR E APROVAR
-    console.log('5️⃣ Todas validações passaram! Registrando...');
-    await registrarTransacao(paymentData);
+    // TUDO OK!
+    console.log('✅ Todas validações passaram!');
+    await registrarTransacao(dados);
     
-    console.log('='.repeat(50));
+    console.log('='.repeat(40));
     console.log('🎉 PAGAMENTO VALIDADO COM SUCESSO!');
-    console.log('='.repeat(50));
+    console.log('='.repeat(40));
     
     return {
         valid: true,

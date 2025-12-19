@@ -114,7 +114,7 @@ const PaymentUploader = ({ onValidationComplete, onCancel, onNewPayment }) => {
             status: 'APROVADO'
           },
           validacaoPIX: pixValidationResult,
-          timestamp: new Date().toISOString()
+          registeredAt: new Date().toISOString()
         };
 
         // Notificar componente pai após delay
@@ -194,8 +194,8 @@ const PaymentUploader = ({ onValidationComplete, onCancel, onNewPayment }) => {
     console.log(`🧪 Teste de valor insuficiente: R$ ${amount.toFixed(2)}`);
   }
     // Hash ROBUSTO: nome + tamanho + MINUTO ATUAL (agrupa uploads próximos)
-    const fileHash = simpleHash(fileName + '_SIZE_' + file.size + '_MIN_' + Math.floor(timestamp / 60000));
-    console.log('✅ Hash gerado:', fileHash, 'Minuto:', Math.floor(timestamp / 60000));
+    const fileHash = simpleHash(fileName + '_SIZE_' + file.size + '_MIN_' + Math.floor(Date.now() / 60000));
+    console.log('✅ Hash gerado:', fileHash, 'Minuto:', Math.floor(Date.now() / 60000));
     const transactionId = fileName.toLowerCase().includes('duplicado') 
       ? 'DUP_TEST_123'
       : 'PIX_' + fileHash;
