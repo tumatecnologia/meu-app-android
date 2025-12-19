@@ -88,7 +88,7 @@ const PaymentUploader = ({ onValidationComplete, onCancel, onNewPayment }) => {
       const pixValidationResult = await validatePayment({
         transactionId: extractedData.transactionId,
         amount: extractedData.amount,
-        payeeName: extractedData.beneficiary,
+        payeeName: extractedData.payeeName,
         paymentDate: extractedData.date
       });
 
@@ -108,7 +108,7 @@ const PaymentUploader = ({ onValidationComplete, onCancel, onNewPayment }) => {
           mensagem: 'Comprovante aprovado pelo sistema PIX',
           registro: {
             id_transacao: extractedData.transactionId,
-            nome_favorecido: extractedData.beneficiary,
+            nome_favorecido: extractedData.payeeName,
             valor: extractedData.amount,
             data: extractedData.date,
             status: 'APROVADO'
@@ -201,7 +201,7 @@ const PaymentUploader = ({ onValidationComplete, onCancel, onNewPayment }) => {
       : 'PIX_' + fileHash;
     
     return {
-      beneficiary: beneficiary,
+      payeeName: payeeName,
       amount: amount,
       date: extractedDate, // DATA EXTRAÍDA DO ARQUIVO
       transactionId: transactionId,

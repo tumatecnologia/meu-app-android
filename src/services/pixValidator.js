@@ -1,9 +1,9 @@
 /**
- * VALIDADOR PIX - VERSÃO DEFINITIVA SEM TIMESTAMP
- * Sistema anti-fraude completo para GitHub Pages
+ * VALIDADOR PIX - VERSÃO 7.0 COMPATÍVEL
+ * Aceita tanto 'payeeName' quanto 'beneficiary'
  */
 
-console.log('🔒 Validador PIX carregado - VERSÃO DEFINITIVA');
+console.log('🔒 Validador PIX v7.0 - COMPATÍVEL');
 
 // CONFIGURAÇÕES
 const VALOR_MINIMO = 10.00;
@@ -12,7 +12,7 @@ const NOMES_VALIDOS = [
     'GUSTAVO S RIBEIRO', 
     'GUSTAVO S. RIBEIRO'
 ];
-const STORAGE_KEY = 'pix_transactions_final_v7';
+const STORAGE_KEY = 'pix_transactions_v7';
 
 // Utilitários
 function normalizarNome(nome) {
@@ -42,7 +42,7 @@ function dataEHoje(dataStr) {
 
 // Sistema anti-duplicação
 async function verificarDuplicado(id) {
-    console.log(`🔍 Verificando duplicata: ${id}`);
+    console.log(`�� Verificando duplicata: ${id}`);
     
     try {
         const storage = localStorage.getItem(STORAGE_KEY);
@@ -66,9 +66,9 @@ async function registrarTransacao(dados) {
     const registro = {
         id: dados.transactionId,
         valor: dados.amount,
-        nome: dados.payeeName,
-        data: dados.paymentDate,
-        registroEm: new Date().toISOString(), // SEM TIMESTAMP
+        nome: dados.payeeName || dados.beneficiary, // ACEITA AMBOS
+        data: dados.paymentDate || dados.date,      // ACEITA AMBOS
+        registroEm: new Date().toISOString(),
         arquivo: dados.fileName || 'desconhecido'
     };
     
@@ -83,15 +83,27 @@ async function registrarTransacao(dados) {
     }
 }
 
-// VALIDAÇÃO PRINCIPAL
+// VALIDAÇÃO PRINCIPAL - COMPATÍVEL
 export async function validatePayment(dados) {
     console.log('='.repeat(40));
     console.log('🔍 VALIDAÇÃO PIX INICIADA');
-    console.log('📊 Dados:', dados);
+    console.log('📊 Dados recebidos:', dados);
+    
+    // Normalizar nomes dos campos (compatibilidade)
+    const payeeName = dados.payeeName || dados.beneficiary;
+    const paymentDate = dados.paymentDate || dados.date;
+    const transactionId = dados.transactionId;
+    const amount = dados.amount;
+    
+    console.log('📋 Dados normalizados:');
+    console.log('  - Nome:', payeeName);
+    console.log('  - Data:', paymentDate);
+    console.log('  - ID:', transactionId);
+    console.log('  - Valor:', amount);
     
     // 1. Anti-duplicação
     console.log('1️⃣ Verificando duplicata...');
-    const duplicado = await verificarDuplicado(dados.transactionId);
+    const duplicado = await verificarDuplicado(transactionId);
     if (duplicado) {
         console.log('❌ COMPROVANTE DUPLICADO');
         return {
@@ -103,7 +115,7 @@ export async function validatePayment(dados) {
     
     // 2. Valor mínimo R$ 10,00
     console.log('2️⃣ Verificando valor mínimo...');
-    const valor = parseFloat(dados.amount);
+    const valor = parseFloat(amount);
     if (isNaN(valor)) {
         console.log('❌ VALOR INVÁLIDO');
         return {
@@ -124,8 +136,8 @@ export async function validatePayment(dados) {
     
     // 3. Nome do favorecido
     console.log('3️⃣ Verificando nome...');
-    if (!dados.payeeName || !validarNome(dados.payeeName)) {
-        console.log(`❌ NOME INVÁLIDO: "${dados.payeeName}"`);
+    if (!payeeName || !validarNome(payeeName)) {
+        console.log(`❌ NOME INVÁLIDO: "${payeeName}"`);
         return {
             valid: false,
             error: 'NOME DO FAVORECIDO INVÁLIDO',
@@ -135,9 +147,9 @@ export async function validatePayment(dados) {
     
     // 4. Data do comprovante
     console.log('4️⃣ Verificando data...');
-    if (!dados.paymentDate || !dataEHoje(dados.paymentDate)) {
+    if (!paymentDate || !dataEHoje(paymentDate)) {
         const hoje = new Date().toLocaleDateString('pt-BR');
-        console.log(`❌ DATA INVÁLIDA: "${dados.paymentDate}" (hoje: ${hoje})`);
+        console.log(`❌ DATA INVÁLIDA: "${paymentDate}" (hoje: ${hoje})`);
         return {
             valid: false,
             error: 'DATA INVÁLIDA',
@@ -147,7 +159,11 @@ export async function validatePayment(dados) {
     
     // TUDO OK!
     console.log('✅ Todas validações passaram!');
-    await registrarTransacao(dados);
+    await registrarTransacao({
+        ...dados,
+        payeeName,
+        paymentDate
+    });
     
     console.log('='.repeat(40));
     console.log('🎉 PAGAMENTO VALIDADO COM SUCESSO!');
