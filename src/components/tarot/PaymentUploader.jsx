@@ -174,11 +174,8 @@ const PaymentUploader = ({ onValidationComplete, onCancel, onNewPayment }) => {
       console.log('⚠️ Data não encontrada no nome do arquivo, usando data atual');
     }
     
-    // Para testes: usar nome errado se arquivo contiver 'erro_nome'
-    const payeeName = fileName.toLowerCase().includes('erro_nome') 
-      ? 'JOÃO SILVA' 
-      : 'GUSTAVO SANTOS RIBEIRO';
-  // Para testes: usar valor errado se arquivo contiver "erro_valor"
+    // Para testes: usar nome errado se arquivo contiver "erro_nome"
+    const payeeName = fileName.toLowerCase().includes("erro_nome") ? "JOÃO SILVA" : "GUSTAVO SANTOS RIBEIRO";
   // ======================================================
   // CORREÇÃO: EXTRAIR VALOR DO NOME DO ARQUIVO
   // ======================================================
