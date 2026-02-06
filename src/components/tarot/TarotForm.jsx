@@ -16,12 +16,12 @@ const TarotForm = ({ formData, setFormData, onSubmit, loading }) => {
     <form onSubmit={onSubmit} className="space-y-4 bg-white/10 p-6 rounded-xl backdrop-blur-sm">
       <div className="mb-4">
         <label style={{display: 'block', color: 'yellow', fontWeight: 'bold', fontSize: '18px', marginBottom: '5px'}}>
-          NOME COMPLETO
+          NOME COMPLETO (TESTE)
         </label>
         <input
           required
           type="text"
-          className="w-full bg-white/10 border border-purple-500 rounded-lg p-3 text-white"
+          className="w-full bg-white/20 border border-yellow-500 rounded-lg p-3 text-white"
           value={formData.name || ''}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           placeholder="Digite seu nome"
@@ -30,15 +30,14 @@ const TarotForm = ({ formData, setFormData, onSubmit, loading }) => {
 
       <div className="mb-4">
         <label style={{display: 'block', color: 'yellow', fontWeight: 'bold', fontSize: '18px', marginBottom: '5px'}}>
-          DATA DE NASCIMENTO
+          DATA DE NASCIMENTO (TESTE)
         </label>
         <input
           required
           type="tel"
-          id="data_nascimento_vFINAL"
           autoComplete="off"
           maxLength="10"
-          className="w-full bg-white/10 border border-purple-500 rounded-lg p-3 text-white"
+          className="w-full bg-white/20 border border-yellow-500 rounded-lg p-3 text-white"
           value={formData.birthDate || ''}
           onChange={handleDateChange}
           placeholder="DD/MM/AAAA"
