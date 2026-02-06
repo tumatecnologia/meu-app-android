@@ -1,7 +1,6 @@
 import React from 'react';
 
 const TarotForm = ({ formData, setFormData, onSubmit, loading }) => {
-  
   const handleDateChange = (e) => {
     let v = e.target.value.replace(/\D/g, "");
     if (v.length > 8) v = v.substring(0, 8);
@@ -16,24 +15,23 @@ const TarotForm = ({ formData, setFormData, onSubmit, loading }) => {
   return (
     <form onSubmit={onSubmit} className="space-y-4 bg-white/10 p-6 rounded-xl backdrop-blur-sm">
       <div className="space-y-2">
-        <label className="text-purple-200 text-sm">Nome Completo</label>
+        <label className="block text-purple-200 text-sm font-medium mb-1">Nome Completo</label>
         <input
           required
           type="text"
           className="w-full bg-white/5 border border-purple-500/30 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500"
           value={formData.name || ''}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="Seu nome"
+          placeholder="Digite seu nome"
         />
       </div>
 
       <div className="space-y-2">
-        <label className="text-purple-200 text-sm">Data de Nascimento</label>
+        <label className="block text-purple-200 text-sm font-medium mb-1">Data de Nascimento</label>
         <input
           required
           type="tel" 
-          id="campo_data_manual_v3"
-          name="data_nascimento_sem_calendario"
+          id="campo_data_manual_v4"
           autoComplete="off"
           maxLength="10"
           className="w-full bg-white/5 border border-purple-500/30 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500"
