@@ -1,304 +1,54 @@
-import React, { useState } from 'react';
-import { User, Calendar, MessageSquare, ArrowRight, ArrowLeft } from 'lucide-react';
+import React from 'react';
 
-const TarotForm = ({ themes, selectedTheme, onThemeSelect, onFormSubmit, onBack }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    birthDate: '',
-    question: ''
-  });
-
-  const [dateError, setDateError] = useState('');
-  const [dateTouched, setDateTouched] = useState(false);
-
-  // Função para formatar data enquanto digita (DD/MM/AAAA)
-  const formatDateInput = (value) => {
-    // Remove tudo que não é número
-    let numbers = value.replace(/\D/g, '');
-    
-    // Limita a 8 dígitos (DDMMAAAA)
-    if (numbers.length > 8) {
-      numbers = numbers.substring(0, 8);
+const TarotForm = ({ formData, setFormData, onSubmit, loading }) => {
+  
+  // Função para colocar as barras automaticamente na data
+  const handleDateChange = (e) => {
+    let value = e.target.value.replace(/\D/g, ""); // Remove o que não é número
+    if (value.length <= 8) {
+      value = value.replace(/(\d{2})(\d{2})(\d{4})/, "$1/$2/$3");
+      // Ajuste para ir colocando as barras enquanto digita
+      if (value.length > 2 && value.length <= 4) value = value.replace(/(\d{2})(\d{0,2})/, "$1/$2");
+      if (value.length > 4) value = value.replace(/(\d{2})(\d{2})(\d{0,4})/, "$1/$2/$3");
     }
-    
-    // Aplica máscara DD/MM/AAAA
-    if (numbers.length <= 2) {
-      return numbers;
-    } else if (numbers.length <= 4) {
-      return numbers.substring(0, 2) + '/' + numbers.substring(2, 4);
-    } else {
-      return numbers.substring(0, 2) + '/' + numbers.substring(2, 4) + '/' + numbers.substring(4, 8);
-    }
+    setFormData({ ...formData, birthDate: value });
   };
-
-  // Função para validar data
-  const validateDate = (dateStr) => {
-    if (!dateStr || dateStr.length < 10) {
-      return { valid: false, error: 'Data incompleta (DD/MM/AAAA)' };
-    }
-    
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) {
-      return { valid: false, error: 'Formato inválido' };
-    }
-    
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10);
-    const year = parseInt(parts[2], 10);
-    
-    // Validações básicas
-    if (isNaN(day) || isNaN(month) || isNaN(year)) {
-      return { valid: false, error: 'Digite apenas números' };
-    }
-    
-    if (year < 1900 || year > new Date().getFullYear()) {
-      return { valid: false, error: `Ano inválido (1900-${new Date().getFullYear()})` };
-    }
-    
-    if (month < 1 || month > 12) {
-      return { valid: false, error: 'Mês inválido (1-12)' };
-    }
-    
-    // Valida dias do mês
-    const daysInMonth = new Date(year, month, 0).getDate();
-    if (day < 1 || day > daysInMonth) {
-      return { valid: false, error: 'Dia inválido para este mês' };
-    }
-    
-    // Verifica se é maior de 12 anos (idade mínima razoável para tarô)
-    const birthDate = new Date(year, month - 1, day);
-    const today = new Date();
-    const age = today.getFullYear() - year;
-    
-    if (age < 12) {
-      return { valid: false, error: 'É necessário ter pelo menos 12 anos' };
-    }
-    
-    return { valid: true, error: '' };
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    
-    if (name === 'birthDate') {
-      // Formata a data enquanto digita
-      const formatted = formatDateInput(value);
-      setFormData(prev => ({
-        ...prev,
-        [name]: formatted
-      }));
-      
-      // Valida quando tiver 10 caracteres (DD/MM/AAAA)
-      if (formatted.length === 10) {
-        const validation = validateDate(formatted);
-        setDateError(validation.error);
-      } else if (dateTouched && formatted.length < 10) {
-        setDateError('Digite a data completa (DD/MM/AAAA)');
-      }
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
-
-  const handleDateBlur = () => {
-    setDateTouched(true);
-    if (formData.birthDate.length === 10) {
-      const validation = validateDate(formData.birthDate);
-      setDateError(validation.error);
-    } else if (formData.birthDate) {
-      setDateError('Digite a data completa (DD/MM/AAAA)');
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    // Valida a data antes de submeter
-    if (formData.birthDate.length === 10) {
-      const validation = validateDate(formData.birthDate);
-      if (!validation.valid) {
-        setDateError(validation.error);
-        setDateTouched(true);
-        return;
-      }
-    }
-    
-    if (selectedTheme && formData.name.trim() && formData.birthDate && formData.question.trim()) {
-      onFormSubmit({
-        ...formData,
-        theme: selectedTheme
-      });
-    }
-  };
-
-  const handleThemeClick = (themeId) => {
-    onThemeSelect(themeId);
-  };
-
-  // Verificar se o formulário está completo e válido
-  const isFormComplete = formData.name.trim() && 
-                        formData.birthDate.length === 10 && 
-                        formData.question.trim() && 
-                        !dateError;
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-gradient-to-br from-purple-800/30 to-violet-800/30 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-purple-400/30">
-        {/* Título */}
-        <div className="text-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-            Personalize sua Leitura
-          </h2>
-          <p className="text-purple-300">
-            Escolha um tema e preencha seus dados
-          </p>
-        </div>
-
-        {/* Seção de Temas */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <span className="text-amber-400">✨</span>
-            Escolha um tema
-          </h3>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {themes.map((theme) => (
-              <button
-                key={theme.id}
-                onClick={() => handleThemeClick(theme.id)}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  selectedTheme === theme.id
-                    ? `${theme.color} border-amber-400 text-white`
-                    : 'bg-white/10 border-white/20 text-purple-200 hover:border-purple-400'
-                }`}
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <theme.icon className="w-5 h-5" />
-                  <span className="font-medium text-sm">{theme.name}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Formulário Simplificado */}
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 mb-8">
-            {/* Nome */}
-            <div>
-              <label className="text-purple-300 text-sm mb-2 flex items-center gap-2">
-                <User className="w-4 h-4" />
-                Seu nome completo *
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                className="w-full bg-white/10 border border-purple-400/30 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
-                placeholder="Digite seu nome"
-              />
-            </div>
-
-            {/* Data de Nascimento - AGORA COM INPUT DE TEXTO */}
-            <div>
-              <label className="text-purple-300 text-sm mb-2 flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Data de nascimento *
-                <span className="text-xs text-purple-400 ml-auto">DD/MM/AAAA</span>
-              </label>
-              <input
-                type="text"
-                name="birthDate"
-                value={formData.birthDate}
-                onChange={handleInputChange}
-                onBlur={handleDateBlur}
-                maxLength="10"
-                required
-                className="w-full bg-white/10 border border-purple-400/30 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
-                placeholder="DD/MM/AAAA"
-                inputMode="numeric"
-              />
-              {dateError && (
-                <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
-                  ⚠️ {dateError}
-                </p>
-              )}
-              {!dateError && formData.birthDate.length === 10 && (
-                <p className="text-green-400 text-sm mt-1 flex items-center gap-1">
-                  ✅ Data válida
-                </p>
-              )}
-            </div>
-
-            {/* Pergunta */}
-            <div>
-              <label className="text-purple-300 text-sm mb-2 flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" />
-                Sua pergunta *
-              </label>
-              <textarea
-                name="question"
-                value={formData.question}
-                onChange={handleInputChange}
-                rows="3"
-                required
-                className="w-full bg-white/10 border border-purple-400/30 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 resize-none"
-                placeholder="Qual é a sua dúvida ou questão?"
-              />
-            </div>
-          </div>
-
-          {/* Botões */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              type="button"
-              onClick={onBack}
-              className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-purple-200 px-6 py-3 rounded-lg transition-colors font-medium flex-1"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Voltar
-            </button>
-            
-            <button
-              type="submit"
-              disabled={!selectedTheme || !isFormComplete}
-              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium flex-1 transition-all ${
-                selectedTheme && isFormComplete
-                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg hover:shadow-xl cursor-pointer'
-                  : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              Continuar para Pagamento
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </form>
-
-        {/* Informações Simplificadas */}
-        <div className="mt-8 pt-6 border-t border-purple-400/30">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-purple-300 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-amber-300">*</span>
-              <span>Campos obrigatórios</span>
-            </div>
-            <div className="hidden sm:block text-purple-300">•</div>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-amber-300" />
-              <span>Formato: <span className="font-bold text-amber-300">DD/MM/AAAA</span></span>
-            </div>
-            <div className="hidden sm:block text-purple-300">•</div>
-            <div className="flex items-center gap-2">
-              <span className="text-amber-300 font-bold">Mínimo R$ 10,00</span>
-            </div>
-          </div>
-        </div>
+    <form onSubmit={onSubmit} className="space-y-4 bg-white/10 p-6 rounded-xl backdrop-blur-sm">
+      <div className="space-y-2">
+        <label className="text-purple-200 text-sm">Nome Completo</label>
+        <input
+          required
+          type="text"
+          className="w-full bg-white/5 border border-purple-500/30 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          placeholder="Seu nome"
+        />
       </div>
-    </div>
+
+      <div className="space-y-2">
+        <label className="text-purple-200 text-sm">Data de Nascimento (DD/MM/AAAA)</label>
+        <input
+          required
+          type="tel"
+          maxLength="10"
+          className="w-full bg-white/5 border border-purple-500/30 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500"
+          value={formData.birthDate}
+          onChange={handleDateChange}
+          placeholder="Ex: 10/05/1990"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-lg transition-all shadow-lg shadow-purple-900/20 disabled:opacity-50"
+      >
+        {loading ? "PROCESSANDO..." : "VER MEU DESTINO"}
+      </button>
+    </form>
   );
 };
 
