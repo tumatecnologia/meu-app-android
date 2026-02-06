@@ -1,26 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { RotateCw, Sparkles, Calendar } from 'lucide-react';
-import TarotCardComponent from './TarotCardComponent';
-import { 
-  getThemeDisplayName,
-  getPositionImpact,
-  getCardLesson,
-  getCardEnergy,
-  analyzeCardsSynergy,
-  generateSpecificWarnings,
-  generateOpportunities,
-  generateChallengesAndSolutions,
-  generatePracticalActions,
-  getExpandedFinalAdvice,
-  generateEnergyProtections,
-  generateKeywords
-} from './tarotHelpers';
+import { Sparkles, RotateCw, Calendar } from 'lucide-react';
 
 const TarotReading = ({ paymentId, theme, userData, onNewReading }) => {
   const [reading, setReading] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Mapear temas
   const themeLabels = {
     'amor': 'Amor',
     'carreira': 'Carreira',
@@ -35,19 +21,106 @@ const TarotReading = ({ paymentId, theme, userData, onNewReading }) => {
     'justica': 'Justiça'
   };
 
+  // Função para extrair primeiro nome
   const getFirstName = (fullName) => {
     if (!fullName) return '';
     return fullName.split(' ')[0];
   };
 
+  // Formatar data de nascimento CORRIGIDA - lendo do formato YYYY-MM-DD
   const formatBirthDate = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
+    
+    // O input date retorna no formato YYYY-MM-DD
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+      const [year, month, day] = parts;
+      return `${day}/${month}/${year}`;
+    }
+    
+    // Fallback para tentar parsear
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString;
+      
+      return date.toLocaleDateString('pt-BR');
+    } catch (error) {
+      return dateString;
+    }
   };
 
-  // Mover generateInterpretation para antes de generateReading
-  const generateInterpretation = useCallback((theme, cards, userData) => {
+  useEffect(() => {
+    // Gerar leitura
+    const generateReading = () => {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Gerar cartas aleatórias
+      const allCards = [
+        { name: 'O Louco', upright: 'Novos começos, aventura, liberdade', reversed: 'Imprudência, risco excessivo' },
+        { name: 'O Mago', upright: 'Vontade, habilidade, recurso', reversed: 'Manipulação, falta de habilidade' },
+        { name: 'A Sacerdotisa', upright: 'Intuição, mistério, sabedoria', reversed: 'Ignorar a intuição, superficialidade' },
+        { name: 'A Imperatriz', upright: 'Fertilidade, beleza, natureza', reversed: 'Dependência, negligência' },
+        { name: 'O Imperador', upright: 'Autoridade, estrutura, controle', reversed: 'Rigidez, dominação' },
+        { name: 'O Hierofante', upright: 'Tradição, espiritualidade, conformidade', reversed: 'Rebelião, não-conformidade' },
+        { name: 'Os Amantes', upright: 'Amor, harmonia, relacionamentos', reversed: 'Desequilíbrio, escolhas difíceis' },
+        { name: 'O Carro', upright: 'Determinação, vitória, vontade', reversed: 'Falta de direção, agressão' },
+        { name: 'A Força', upright: 'Coragem, paciência, controle', reversed: 'Fraqueza, insegurança' },
+        { name: 'O Eremita', upright: 'Introspecção, prudência, orientação', reversed: 'Isolamento, ignorância' },
+        { name: 'A Roda da Fortuna', upright: 'Destino, sorte, ciclos', reversed: 'Má sorte, resistência à mudança' },
+        { name: 'A Justiça', upright: 'Equilíbrio, justiça, verdade', reversed: 'Injustiça, falta de responsabilidade' },
+        { name: 'O Pendurado', upright: 'Sacrifício, perspectiva, rendição', reversed: 'Estagnação, resistência' },
+        { name: 'A Morte', upright: 'Fim, mudança, transformação', reversed: 'Medo de mudar, estagnação' },
+        { name: 'A Temperança', upright: 'Equilíbrio, moderação, paciência', reversed: 'Desequilíbrio, excessos' },
+        { name: 'O Diabo', upright: 'Escravidão, materialismo, ignorância', reversed: 'Libertação, esclarecimento' },
+        { name: 'A Torre', upright: 'Mudança repentina, revelação', reversed: 'Medo de mudança, desastre evitado' },
+        { name: 'A Estrela', upright: 'Esperança, inspiração, serenidade', reversed: 'Desespero, falta de fé' },
+        { name: 'A Lua', upright: 'Ilusão, intuição, inconsciente', reversed: 'Confusão, medo' },
+        { name: 'O Sol', upright: 'Alegria, sucesso, vitalidade', reversed: 'Tristeza, falta de sucesso' },
+        { name: 'O Julgamento', upright: 'Renascimento, absolvição, decisão', reversed: 'Dúvida, culpa' },
+        { name: 'O Mundo', upright: 'Realização, viagem, integração', reversed: 'Incompletude, falta de realização' }
+      ];
+
+      // Sortear 3 cartas únicas
+      const selectedCards = [];
+      const usedIndexes = new Set();
+      
+      while (selectedCards.length < 3) {
+        const randomIndex = Math.floor(Math.random() * allCards.length);
+        if (!usedIndexes.has(randomIndex)) {
+          usedIndexes.add(randomIndex);
+          const card = allCards[randomIndex];
+          const reversed = Math.random() > 0.7; // 30% chance de ser reversa
+          
+          selectedCards.push({
+            card_name: card.name,
+            position: selectedCards.length === 0 ? 'Passado' : selectedCards.length === 1 ? 'Presente' : 'Futuro',
+            reversed: reversed,
+            meaning: reversed ? card.reversed : card.upright
+          });
+        }
+      }
+
+      // Gerar interpretação com dados do usuário no Conselho Final
+      const interpretation = generateInterpretation(theme, selectedCards, userData);
+
+      const readingData = {
+        cards: selectedCards,
+        interpretation: interpretation,
+        date: today,
+        theme: theme,
+        type: 'three_cards'
+      };
+
+      setTimeout(() => {
+        setReading(readingData);
+        setLoading(false);
+      }, 2000);
+    };
+
+    generateReading();
+  }, [theme, userData]);
+
+  const generateInterpretation = (theme, cards, userData) => {
     const themeTexts = {
       'amor': `Baseado nas cartas sorteadas, sua jornada amorosa revela insights profundos. `,
       'carreira': `Suas cartas indicam caminhos profissionais e oportunidades. `,
@@ -68,163 +141,53 @@ const TarotReading = ({ paymentId, theme, userData, onNewReading }) => {
     interpretation += `🔮 ${cards[1].card_name} (Presente${cards[1].reversed ? ' - Invertida' : ''}):\n${cards[1].meaning}\n\n`;
     interpretation += `🔮 ${cards[2].card_name} (Futuro${cards[2].reversed ? ' - Invertida' : ''}):\n${cards[2].meaning}\n\n`;
     
-    // ============================================
-    // CONSELHO FINAL EXPANDIDO E PERSONALIZADO
-    // ============================================
-    
+    // CONCELHO FINAL COM DADOS DO USUÁRIO
     const firstName = getFirstName(userData?.name || '');
     const birthDate = formatBirthDate(userData?.birthDate || '');
     const question = userData?.question || '';
-    const gender = userData?.gender || '';
     
-    interpretation += `\n\n🎯 **CONSELHO FINAL - ANÁLISE PROFUNDA**\n\n`;
+    interpretation += `�� CONSELHO FINAL:\n`;
     
-    // ========== CABEÇALHO PERSONALIZADO ==========
-    interpretation += `✨ **LEITURA PERSONALIZADA**\n`;
-    if (firstName) {
-      interpretation += `👤 **Para:** ${firstName} ${gender === 'F' ? '♀️' : gender === 'M' ? '♂️' : '👤'}\n`;
+    if (firstName && birthDate && question) {
+      interpretation += `Para ${firstName}, nascido(a) em ${birthDate}, que pergunta sobre "${question}", `;
+    } else if (firstName && birthDate) {
+      interpretation += `Para ${firstName}, nascido(a) em ${birthDate}, `;
+    } else if (firstName && question) {
+      interpretation += `Para ${firstName}, que pergunta sobre "${question}", `;
+    } else if (birthDate && question) {
+      interpretation += `Para quem nasceu em ${birthDate} e pergunta sobre "${question}", `;
+    } else if (firstName) {
+      interpretation += `Para ${firstName}, `;
+    } else if (birthDate) {
+      interpretation += `Para quem nasceu em ${birthDate}, `;
+    } else if (question) {
+      interpretation += `Para quem pergunta sobre "${question}", `;
     }
-    if (birthDate) {
-      interpretation += `📅 **Nascimento:** ${birthDate}\n`;
-    }
-    if (question) {
-      interpretation += `❓ **Pergunta:** "${question}"\n`;
-    }
-    interpretation += `🔮 **Tema:** ${getThemeDisplayName(theme)}\n\n`;
     
-    // ========== ANÁLISE DETALHADA DAS CARTAS ==========
-    interpretation += `✨ **ANÁLISE DETALHADA DAS CARTAS**\n\n`;
+    interpretation += `o conselho das cartas é: ${getFinalAdvice(theme, cards)}\n\n`;
     
-    cards.forEach((card, index) => {
-      const positionNames = ['PASSADO 💫', 'PRESENTE ⭐', 'FUTURO 🌈'];
-      
-      interpretation += `${index + 1}. **${card.card_name.toUpperCase()}** (${positionNames[index]}) ${card.reversed ? '🔁 REVERSA' : '✨ NORMAL'}\n`;
-      interpretation += `   📖 **Significado:** ${card.meaning}\n`;
-      interpretation += `   💫 **Impacto:** ${getPositionImpact(card, index)}\n`;
-      interpretation += `   🎓 **Lição:** ${getCardLesson(card, theme)}\n`;
-      interpretation += `   ⚡ **Energia:** ${getCardEnergy(card)}\n\n`;
-    });
-    
-    // ========== SINERGIA ENTRE AS CARTAS ==========
-    interpretation += `💫 **SINERGIA ENTRE AS CARTAS**\n`;
-    interpretation += `${analyzeCardsSynergy(cards)}\n\n`;
-    
-    // ========== ALERTAS ESPECÍFICOS ==========
-    interpretation += `⚠️ **ALERTAS IMPORTANTES**\n`;
-    interpretation += `${generateSpecificWarnings(cards, theme)}\n\n`;
-    
-    // ========== OPORTUNIDADES ==========
-    interpretation += `💡 **OPORTUNIDADES A EXPLORAR**\n`;
-    interpretation += `${generateOpportunities(cards, theme)}\n\n`;
-    
-    // ========== DESAFIOS E SUPERACOES ==========
-    interpretation += `🛡️ **DESAFIOS E COMO SUPERÁ-LOS**\n`;
-    interpretation += `${generateChallengesAndSolutions(cards)}\n\n`;
-    
-    // ========== AÇÕES PRÁTICAS ==========
-    interpretation += `🚀 **AÇÕES PRÁTICAS PARA OS PRÓXIMOS 7 DIAS**\n`;
-    interpretation += `${generatePracticalActions(cards, firstName)}\n\n`;
-    
-    // ========== CONSELHO FINAL PERSONALIZADO ==========
-    interpretation += `🌈 **CONSELHO FINAL PERSONALIZADO**\n`;
-    if (firstName) {
-      interpretation += `${firstName}, `;
-    }
-    interpretation += `${getExpandedFinalAdvice(theme, cards, firstName)}\n\n`;
-    
-    // ========== PROTEÇÕES ENERGÉTICAS ==========
-    interpretation += `🛡️ **PROTEÇÕES ENERGÉTICAS RECOMENDADAS**\n`;
-    interpretation += `${generateEnergyProtections(cards)}\n\n`;
-    
-    // ========== PALAVRAS-CHAVE ==========
-    interpretation += `🔑 **PALAVRAS-CHAVE DA SUA JORNADA**\n`;
-    interpretation += `${generateKeywords(cards)}\n\n`;
-    
-    // ========== MENSAGEM FINAL ==========
-    interpretation += `🌟 **MENSAGEM FINAL**\n`;
-    interpretation += `Que esta leitura seja um farol em seu caminho, ${firstName || 'querid' + (gender === 'F' ? 'a' : 'o')}! `;
-    interpretation += `Lembre-se: cada carta é um capítulo de sua história, mas você é o autor do livro completo.\n\n`;
-    
-    // ========== DATA E ASSINATURA ==========
-    const now = new Date();
-    interpretation += `📅 **📅 **Data da leitura:**** ${now.toLocaleDateString('pt-BR', { 
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })}\n`;
-    interpretation += `🔮 **Realizado por:** Oráculo Místico\n`;
-    interpretation += `✨ **Que a luz das estrelas guie sempre seu caminho!**`;
+    interpretation += `✨ Que esta leitura ilumine seu caminho!`;
 
     return interpretation;
-  }, []);
+  };
 
-  const generateReading = useCallback(() => {
-    setLoading(true);
-
-    // Dados fixos de cartas (mantido do original)
-    const allCards = [
-      { name: 'O Louco', upright: 'Inocência, novos começos, aventura', reversed: 'Imprudência, risco, ingenuidade' },
-      { name: 'O Mago', upright: 'Vontade, recurso, habilidade', reversed: 'Truques, ilusão, energia não utilizada' },
-      { name: 'A Sacerdotisa', upright: 'Intuição, mistério, inconsciente', reversed: 'Segredos superficiais, ignorância' },
-      { name: 'A Imperatriz', upright: 'Fertilidade, natureza, abundância', reversed: 'Estagnação, negligência' },
-      { name: 'O Imperador', upright: 'Autoridade, estrutura, controle', reversed: 'Rigidez, dominação' },
-      { name: 'O Hierofante', upright: 'Tradição, espiritualidade, educação', reversed: 'Rebeldia, não-conformidade' },
-      { name: 'Os Amantes', upright: 'Amor, harmonia, escolhas', reversed: 'Desequilíbrio, má escolha' },
-      { name: 'O Carro', upright: 'Determinação, vitória, progresso', reversed: 'Falta de direção, agressão' },
-      { name: 'A Força', upright: 'Força interior, coragem, compaixão', reversed: 'Fraqueza, medo, falta de autoconfiança' },
-      { name: 'O Eremita', upright: 'Introspecção, sabedoria, solidão', reversed: 'Isolamento, reclusão, ignorância' },
-      { name: 'A Roda da Fortuna', upright: 'Destino, sorte, ciclos', reversed: 'Má sorte, resistência à mudança' },
-      { name: 'A Justiça', upright: 'Justiça, verdade, equilíbrio', reversed: 'Injustiça, desequilíbrio' },
-      { name: 'O Enforcado', upright: 'Sacrifício, perspectiva, rendição', reversed: 'Estagnação, indecisão' },
-      { name: 'A Morte', upright: 'Transformação, fim, renovação', reversed: 'Medo de mudança, estagnação' },
-      { name: 'A Temperança', upright: 'Equilíbrio, moderação, harmonia', reversed: 'Desequilíbrio, excessos' },
-      { name: 'O Diabo', upright: 'Escravidão, materialismo, ignorância', reversed: 'Libertação, esclarecimento' },
-      { name: 'A Torre', upright: 'Mudança repentina, revelação', reversed: 'Medo de mudança, desastre evitado' },
-      { name: 'A Estrela', upright: 'Esperança, inspiração, serenidade', reversed: 'Desespero, falta de fé' },
-      { name: 'A Lua', upright: 'Ilusão, intuição, inconsciente', reversed: 'Confusão, medo' },
-      { name: 'O Sol', upright: 'Alegria, sucesso, vitalidade', reversed: 'Tristeza, falta de sucesso' },
-      { name: 'O Julgamento', upright: 'Renascimento, absolvição, decisão', reversed: 'Dúvida, culpa' },
-      { name: 'O Mundo', upright: 'Realização, viagem, integração', reversed: 'Incompletude, falta de realização' }
-    ];
-
-    // Sortear 3 cartas únicas
-    const selectedCards = [];
-    const usedIndexes = new Set();
-    
-    while (selectedCards.length < 3) {
-      const randomIndex = Math.floor(Math.random() * allCards.length);
-      if (!usedIndexes.has(randomIndex)) {
-        usedIndexes.add(randomIndex);
-        const card = allCards[randomIndex];
-        const reversed = Math.random() > 0.7; // 30% chance de ser reversa
-        
-        selectedCards.push({
-          card_name: card.name,
-          position: selectedCards.length === 0 ? 'Passado' : selectedCards.length === 1 ? 'Presente' : 'Futuro',
-          reversed: reversed,
-          meaning: reversed ? card.reversed : card.upright
-        });
-      }
-    }
-
-    const newReading = {
-      theme: theme,
-      cards: selectedCards,
-      date: new Date().toLocaleDateString('pt-BR'),
-      interpretation: generateInterpretation(theme, selectedCards, userData)
+  const getFinalAdvice = (theme, cards) => {
+    const advices = {
+      'amor': 'mantenha seu coração aberto e confie no processo do amor. A paciência revelará os sentimentos verdadeiros.',
+      'carreira': 'siga sua intuição profissional e esteja aberto a novas oportunidades que surgirão em breve.',
+      'financas': 'equilíbrio e planejamento são chaves para sua segurança financeira. Evite impulsos.',
+      'espiritualidade': 'conecte-se com sua essência e busque a paz interior através da meditação e autoconhecimento.',
+      'saude': 'cuide de seu corpo e mente com amor e atenção. Pequenos hábitos fazem grande diferença.',
+      'traicao': 'a verdade sempre vem à tona. Confie em sua intuição e não tema enfrentar a realidade.',
+      'casamento': 'comunicação e respeito são fundamentais para qualquer união. Dialogue com sinceridade.',
+      'viagem': 'esteja aberto a novas experiências e aprendizados. Cada jornada traz crescimento.',
+      'noivado': 'o amor verdadeiro é construído com paciência e compreensão mútua. Valorize cada etapa.',
+      'conselho': 'ouça sua voz interior antes de tomar decisões importantes. Seu instinto é sábio.',
+      'justica': 'busque o equilíbrio em todas as áreas de sua vida. A justiça chegará no momento certo.'
     };
-
-    setTimeout(() => {
-      setReading(newReading);
-      setLoading(false);
-    }, 800);
-  }, [theme, userData, generateInterpretation]);
-
-  useEffect(() => {
-    generateReading();
-  }, [generateReading]);
+    
+    return advices[theme] || 'confie no processo e mantenha-se fiel aos seus valores. O universo conspira a seu favor.';
+  };
 
   if (loading) {
     return (
@@ -286,29 +249,23 @@ const TarotReading = ({ paymentId, theme, userData, onNewReading }) => {
               {/* Nome da carta */}
               <h3 className="text-xl font-bold text-white mb-3">{card.card_name}</h3>
               
-              {/* Card Component */}
-              <div className="mb-4">
-                <TarotCardComponent 
-                  cardName={card.card_name} 
-                  isReversed={card.reversed}
-                />
-              </div>
-              
-              {/* Status da carta */}
+              {/* Status reverso */}
               <div className="mb-3">
-                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                <span className={`inline-block px-3 py-1 rounded-full text-xs ${
                   card.reversed 
                     ? 'bg-red-500/20 text-red-300' 
                     : 'bg-green-500/20 text-green-300'
                 }`}>
-                  {card.reversed ? '🔁 Invertida' : '✨ Normal'}
+                  {card.reversed ? '🔄 Invertida' : '⬆️ Direta'}
                 </span>
               </div>
               
               {/* Significado */}
-              <p className="text-purple-200 text-sm">
-                {card.meaning}
-              </p>
+              <div className="mt-4 pt-4 border-t border-purple-400/30">
+                <p className="text-purple-200 text-sm">
+                  {card.meaning}
+                </p>
+              </div>
             </div>
           </motion.div>
         ))}
@@ -326,10 +283,12 @@ const TarotReading = ({ paymentId, theme, userData, onNewReading }) => {
               {reading.interpretation}
             </pre>
           </div>
+          
+          {/* Dados do usuário já estão incluídos no Conselho Final acima */}
         </div>
       </div>
 
-      {/* Botões de Ação */}
+      {/* Botões de Ação - REMOVIDO "Salvar Leitura" */}
       <div className="flex flex-wrap gap-3 justify-center mb-8">
         <button
           onClick={onNewReading}
@@ -338,6 +297,8 @@ const TarotReading = ({ paymentId, theme, userData, onNewReading }) => {
           <RotateCw className="w-4 h-4" />
           Nova Leitura
         </button>
+        
+        {/* REMOVIDO: Botão "Salvar Leitura" */}
       </div>
 
       {/* Seção de Consultas Particulares Centralizada */}

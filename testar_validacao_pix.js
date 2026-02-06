@@ -1,71 +1,27 @@
-// Teste prático do sistema de validação PIX
-const { validatePaymentReceipt } = require('./src/services/pixValidator.js');
+import { validatePayment } from './src/services/pixValidator.js';
 
-async function testarValidacao() {
-  console.log('🧪 TESTE PRÁTICO DO SISTEMA PIX\n');
-  
-  // Teste 1: Comprovante VÁLIDO
-  console.log('1️⃣  TESTE VÁLIDO:');
-  const comprovanteValido = `
-COMPROVANTE PIX
-FAVORECIDO: GUSTAVO SANTOS RIBEIRO
-VALOR: R$ 25,00
-DATA: ${new Date().toLocaleDateString()} ${new Date().getHours()}:${new Date().getMinutes()}
-ID DA TRANSAÇÃO: PIXTEST${Date.now()}
-STATUS: CONCLUÍDO
-  `;
-  
-  console.log('📄 Comprovante:');
-  console.log(comprovanteValido);
-  
-  try {
-    const resultado = await validatePaymentReceipt(comprovanteValido);
-    console.log('\n📊 RESULTADO:');
-    console.log('✅ Válido:', resultado.isValid);
-    console.log('📝 Erros:', resultado.errors.length > 0 ? resultado.errors : 'Nenhum');
-    console.log('💳 Dados extraídos:', {
-      favorecido: resultado.extractedData.beneficiary,
-      valor: `R$ ${resultado.extractedData.amount}`,
-      id: resultado.extractedData.transactionId
-    });
+// Isso impede que o erro de "localStorage" aconteça no terminal
+global.localStorage = {
+    getItem: () => null,
+    setItem: () => null
+};
+
+async function executarTeste() {
+    console.log("🚀 INICIANDO TESTE DE VALIDAÇÃO...");
+
+    const dadosSimulados = {
+        transactionId: "ID-TESTE-12345",
+        amount: "20.00", 
+        payeeName: "GUSTAVO SANTOS RIBEIRO", 
+        paymentDate: new Date().toISOString().split('T')[0],
+        fileName: "teste_manual.png"
+    };
+
+    const resultado = await validatePayment(dadosSimulados);
     
-    if (resultado.isValid) {
-      console.log('\n🎉 CONSULTA DEVE SER LIBERADA!');
-    } else {
-      console.log('\n🚫 CONSULTA NÃO LIBERADA!');
-    }
-  } catch (error) {
-    console.error('❌ Erro no teste:', error);
-  }
-  
-  console.log('\n' + '='.repeat(50) + '\n');
-  
-  // Teste 2: Comprovante INVÁLIDO (valor baixo)
-  console.log('2️⃣  TESTE INVÁLIDO (valor baixo):');
-  const comprovanteInvalido = `
-COMPROVANTE PIX
-FAVORECIDO: GUSTAVO S RIBEIRO
-VALOR: R$ 5,00
-DATA: ${new Date().toLocaleDateString()} ${new Date().getHours()}:${new Date().getMinutes()}
-ID DA TRANSAÇÃO: PIXTEST${Date.now() + 1}
-STATUS: CONCLUÍDO
-  `;
-  
-  console.log('📄 Comprovante:');
-  console.log(comprovanteInvalido);
-  
-  try {
-    const resultado = await validatePaymentReceipt(comprovanteInvalido);
-    console.log('\n📊 RESULTADO:');
-    console.log('✅ Válido:', resultado.isValid);
-    console.log('📝 Erros:', resultado.errors);
-    
-    if (!resultado.isValid) {
-      console.log('\n🚫 CORRETO! Sistema rejeitou o pagamento (valor < R$ 10,00)');
-    }
-  } catch (error) {
-    console.error('❌ Erro no teste:', error);
-  }
+    console.log("\n--- RESULTADO FINAL ---");
+    console.log(resultado.message || resultado.error);
+    console.log("Detalhes:", resultado.details);
 }
 
-testarValidacao();
+executarTeste();
