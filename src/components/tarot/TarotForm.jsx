@@ -15,7 +15,9 @@ const TarotForm = ({ formData, setFormData, onSubmit, loading }) => {
   return (
     <form onSubmit={onSubmit} className="space-y-4 bg-white/10 p-6 rounded-xl backdrop-blur-sm">
       <div className="mb-4">
-        <label className="block text-white font-bold mb-2">Nome Completo</label>
+        <label style={{display: 'block', color: 'yellow', fontWeight: 'bold', fontSize: '18px', marginBottom: '5px'}}>
+          NOME COMPLETO
+        </label>
         <input
           required
           type="text"
@@ -27,11 +29,13 @@ const TarotForm = ({ formData, setFormData, onSubmit, loading }) => {
       </div>
 
       <div className="mb-4">
-        <label className="block text-white font-bold mb-2">Data de Nascimento</label>
+        <label style={{display: 'block', color: 'yellow', fontWeight: 'bold', fontSize: '18px', marginBottom: '5px'}}>
+          DATA DE NASCIMENTO
+        </label>
         <input
           required
           type="tel"
-          id="data_nascimento_v5"
+          id="data_nascimento_vFINAL"
           autoComplete="off"
           maxLength="10"
           className="w-full bg-white/10 border border-purple-500 rounded-lg p-3 text-white"
