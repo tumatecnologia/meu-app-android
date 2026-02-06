@@ -4,30 +4,28 @@ export const validatePayment = async (data) => {
   const agora = new Date().getTime();
   const noventaDiasEmMs = 90 * 24 * 60 * 60 * 1000;
   
-  // Limpeza do texto para busca precisa
   const texto = data.fullText ? data.fullText.toUpperCase().replace(/\n/g, " ") : "";
-  
-  // 1. Histórico de 90 dias
+  const meuNome = "GUSTAVO SANTOS RIBEIRO";
+
   let historicoRaw = JSON.parse(localStorage.getItem('pix_history_v2') || '[]');
   let historicoFiltrado = historicoRaw.filter(item => (agora - item.timestamp) < noventaDiasEmMs);
 
   if (historicoFiltrado.some(item => item.id === data.transactionId)) {
-    return { valid: false, details: "Comprovante já utilizado." };
+    return { valid: false, details: "Este comprovante já foi utilizado." };
   }
 
-  // 2. Validação de Valor
   if (amount < minAmount) {
     return { valid: false, details: `Valor R$ ${amount.toFixed(2)} abaixo do mínimo.` };
   }
 
-  // 3. LÓGICA DE PROXIMIDADE (A "Mira")
-  const termosDestino = ["PARA", "FAVORECIDO", "DESTINATARIO", "DESTINATÁRIO", "RECEBEDOR"];
+  // LISTA AMPLIADA: Incluímos DESTINO e CREDITADO
+  const termosDestino = ["PARA", "FAVORECIDO", "DESTINATARIO", "DESTINATÁRIO", "RECEBEDOR", "DESTINO", "CREDITADO"];
   let encontrouSeuNomeNoLugarCerto = false;
 
   termosDestino.forEach(termo => {
     const posicaoTermo = texto.indexOf(termo);
     if (posicaoTermo !== -1) {
-      // Pega os 60 caracteres logo APÓS a palavra chave
+      // Olhamos os 60 caracteres após a palavra-chave (Destino, Para, etc)
       const trechoDestinatario = texto.substring(posicaoTermo, posicaoTermo + 60);
       if (trechoDestinatario.includes("GUSTAVO") || trechoDestinatario.includes("RIBEIRO")) {
         encontrouSeuNomeNoLugarCerto = true;
@@ -42,14 +40,13 @@ export const validatePayment = async (data) => {
     };
   }
 
-  // 4. Sucesso: Grava e Libera
   historicoFiltrado.push({ id: data.transactionId, timestamp: agora });
   localStorage.setItem('pix_history_v2', JSON.stringify(historicoFiltrado));
 
   return {
     valid: true,
     amount: amount.toFixed(2),
-    payeeName: "GUSTAVO SANTOS RIBEIRO",
-    details: "Pagamento validado com sucesso!"
+    payeeName: meuNome,
+    details: "Pagamento confirmado com sucesso!"
   };
 };
