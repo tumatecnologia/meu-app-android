@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, Loader2 } from 'lucide-react';
-import processarComprovante from "../../services/paymentControl.js";
+import { processPaymentImage as processarComprovante } from "../../services/paymentControl.js";
 
 const PaymentUploader = ({ onValidationComplete }) => {
   const [preview, setPreview] = useState(null);
