@@ -1,52 +1,51 @@
 export const validatePayment = async (data) => {
   const minAmount = 10.0;
   const amount = parseFloat(data.amount);
+  const texto = data.fullText ? data.fullText.toUpperCase().replace(/\s+/g, ' ') : "";
+  const nomeObrigatorio = "GUSTAVO SANTOS RIBEIRO";
+
+  // Item 4: Regra dos 90 dias real (Não limpa ao atualizar)
   const agora = new Date().getTime();
-  const noventaDiasEmMs = 90 * 24 * 60 * 60 * 1000;
+  const noventaDiasMs = 90 * 24 * 60 * 60 * 1000;
+  let historico = JSON.parse(localStorage.getItem('pix_history_v2') || '[]');
   
-  const texto = data.fullText ? data.fullText.toUpperCase().replace(/\n/g, " ") : "";
-  const meuNome = "GUSTAVO SANTOS RIBEIRO";
+  // Filtra APENAS o que expirou. O que é novo permanece.
+  historico = historico.filter(item => (agora - item.timestamp) < noventaDiasMs);
 
-  let historicoRaw = JSON.parse(localStorage.getItem('pix_history_v2') || '[]');
-  let historicoFiltrado = historicoRaw.filter(item => (agora - item.timestamp) < noventaDiasEmMs);
-
-  if (historicoFiltrado.some(item => item.id === data.transactionId)) {
+  if (historico.some(item => item.id === data.transactionId)) {
     return { valid: false, details: "Este comprovante já foi utilizado." };
   }
 
-  if (amount < minAmount) {
-    return { valid: false, details: `Valor R$ ${amount.toFixed(2)} abaixo do mínimo.` };
-  }
-
-  // LISTA AMPLIADA: Incluímos DESTINO e CREDITADO
-  const termosDestino = ["PARA", "FAVORECIDO", "DESTINATARIO", "DESTINATÁRIO", "RECEBEDOR", "DESTINO", "CREDITADO"];
-  let encontrouSeuNomeNoLugarCerto = false;
-
-  termosDestino.forEach(termo => {
-    const posicaoTermo = texto.indexOf(termo);
-    if (posicaoTermo !== -1) {
-      // Olhamos os 60 caracteres após a palavra-chave (Destino, Para, etc)
-      const trechoDestinatario = texto.substring(posicaoTermo, posicaoTermo + 60);
-      if (trechoDestinatario.includes("GUSTAVO") || trechoDestinatario.includes("RIBEIRO")) {
-        encontrouSeuNomeNoLugarCerto = true;
+  // Item 2: Lista exaustiva de palavras-chave
+  const termosDestino = [
+    "DESTINATARIO", "DESTINATÁRIO", "RECEBEDOR", "FAVORECIDO", 
+    "PARA", "DESTINO", "BENEFICIARIO", "BENEFICIÁRIO", "CREDITADO"
+  ];
+  
+  let nomeConfirmado = false;
+  for (const termo of termosDestino) {
+    const posicao = texto.indexOf(termo);
+    if (posicao !== -1) {
+      // Analisa os 80 caracteres após a palavra-chave
+      const trecho = texto.substring(posicao, posicao + 80);
+      if (trecho.includes("GUSTAVO") && trecho.includes("RIBEIRO")) {
+        nomeConfirmado = true;
+        break;
       }
     }
-  });
-
-  if (!encontrouSeuNomeNoLugarCerto) {
-    return { 
-      valid: false, 
-      details: "Destinatário inválido. O PIX deve ser para GUSTAVO SANTOS RIBEIRO." 
-    };
   }
 
-  historicoFiltrado.push({ id: data.transactionId, timestamp: agora });
-  localStorage.setItem('pix_history_v2', JSON.stringify(historicoFiltrado));
+  if (!nomeConfirmado) {
+    return { valid: false, details: "Comprovante inválido: Destinatário deve ser GUSTAVO SANTOS RIBEIRO." };
+  }
 
-  return {
-    valid: true,
-    amount: amount.toFixed(2),
-    payeeName: meuNome,
-    details: "Pagamento confirmado com sucesso!"
-  };
+  if (amount < minAmount) {
+    return { valid: false, details: `Valor insuficiente (Mínimo R$ 10,00).` };
+  }
+
+  // Grava o novo ID no histórico
+  historico.push({ id: data.transactionId, timestamp: agora });
+  localStorage.setItem('pix_history_v2', JSON.stringify(historico));
+
+  return { valid: true, amount: amount.toFixed(2), details: "Pagamento confirmado!" };
 };

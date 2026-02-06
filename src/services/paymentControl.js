@@ -1,70 +1,62 @@
-import { validatePayment } from './pixValidator';
+import { createWorker } from 'tesseract.js';
+import * as pdfjsLib from 'pdfjs-dist';
 
-const melhorarImagem = (file) => {
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+export const processPaymentImage = async (file) => {
+  let imageSource = file;
+
+  // 1. Tratamento de PDF
+  if (file.type === 'application/pdf') {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 2.0 });
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+    await page.render({ canvasContext: context, viewport }).promise;
+    imageSource = canvas.toDataURL('image/jpeg', 0.85);
+  } 
+  // 3. Ajuste de Qualidade para Mobile (Android/iPhone)
+  else {
+    imageSource = await optimizeImage(file);
+  }
+
+  const worker = await createWorker('por');
+  const { data: { text } } = await worker.recognize(imageSource);
+  await worker.terminate();
+  return text;
+};
+
+async function optimizeImage(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxSide = 1600;
+        if (width > maxSide || height > maxSide) {
+          if (width > height) {
+            height *= maxSide / width;
+            width = maxSide;
+          } else {
+            width *= maxSide / height;
+            height = maxSide;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext('2d');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.filter = 'contrast(160%) brightness(110%) grayscale(100%)';
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL('image/jpeg', 0.9));
       };
       img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   });
-};
-
-const processarComprovante = async (file) => {
-  try {
-    const imagemTratada = await melhorarImagem(file);
-    const { data: { text } } = await window.Tesseract.recognize(imagemTratada, 'por');
-    const textUpper = text.toUpperCase();
-
-    // 1. Busca Valor
-    let valorFinal = "0.00";
-    const valorMatch = text.replace(',', '.').match(/(?:R\$|VALOR|PAGO)\s*([\d,.]+)/i);
-    if (valorMatch) valorFinal = valorMatch[1].replace(/[^\d.]/g, '');
-
-    // 2. Busca ID Real
-    const idMatch = text.match(/[A-Z0-9]{20,}/i) || text.match(/[0-9]{15,}/);
-    const idEncontrado = idMatch ? idMatch[0].trim() : null;
-
-    if (!idEncontrado) {
-       return { valid: false, details: 'Código de transação não identificado.' };
-    }
-
-    // 3. Lógica Refinada de Favorecido
-    // Para evitar que aceite o nome do pagador, vamos checar se o seu nome 
-    // aparece no contexto de DESTINATÁRIO/RECEBEDOR.
-    const temMeuNome = textUpper.includes("GUSTAVO") && textUpper.includes("RIBEIRO");
-    
-    // Se o nome do "Fernando" ou outros termos de terceiros aparecerem perto de "Destinatário", bloqueamos
-    const nomesProibidos = ["FERNANDO", "NUBANK", "BANCO", "INTER"]; // Exemplos de segurança
-    
-    let favorecidoConfirmado = "DESCONHECIDO";
-    if (temMeuNome) {
-       // Se o seu nome está no texto, mas o do Fernando também está, 
-       // precisamos garantir que o seu seja o DESTINO.
-       favorecidoConfirmado = "GUSTAVO SANTOS RIBEIRO";
-    }
-
-    const dados = {
-      payeeName: favorecidoConfirmado,
-      amount: valorFinal,
-      transactionId: idEncontrado,
-      fullText: textUpper // Enviamos o texto todo para o validador checar
-    };
-
-    return await validatePayment(dados);
-  } catch (error) {
-    return { valid: false, details: 'Erro ao processar imagem.' };
-  }
-};
-
-export default processarComprovante;
+}
