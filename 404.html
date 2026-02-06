@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecionando... - Oráculo Místico</title>
+    <script>
+        // Redireciona para index.html mantendo a URL
+        sessionStorage.redirect = location.pathname;
+        location.replace('/meu-app-android/');
+    </script>
+</head>
+<body>
+    <noscript>
+        <h1>Redirecionamento necessário</h1>
+        <p>Se não for redirecionado automaticamente, <a href="/meu-app-android/">clique aqui</a>.</p>
+    </noscript>
+</body>
+</html>
