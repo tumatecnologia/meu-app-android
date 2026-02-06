@@ -263,7 +263,7 @@ export default function ThreeCardsReading() {
                 </label>
                 <input
                   name="birthDate"
-                  type="date"
+                  type="text" inputMode="numeric"
                   required
                   className="w-full bg-white/10 border border-purple-400/30 text-white focus:border-amber-400 rounded-lg px-4 py-3 outline-none"
                   max={new Date().toISOString().split('T')[0]}

@@ -100,7 +100,7 @@ const TarotForm = ({ themes, selectedTheme, onThemeSelect, onFormSubmit, onBack 
                 Data de nascimento *
               </label>
               <input
-                type="date"
+                type="text" inputMode="numeric"
                 name="birthDate"
                 value={formData.birthDate}
                 onChange={handleInputChange}

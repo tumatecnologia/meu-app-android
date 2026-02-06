@@ -107,7 +107,7 @@ export default function ThreeCardsReading() {
             <h3 className="text-2xl font-bold text-white mb-4 text-center">Dados da Consulta</h3>
             <form onSubmit={handleFormSubmit} className="space-y-6">
               <input name="name" placeholder="Seu Nome Completo" required className="w-full bg-white/10 border border-purple-400/30 text-white rounded-lg px-4 py-3 outline-none focus:border-amber-400" />
-              <input name="birthDate" type="date" required className="w-full bg-white/10 border border-purple-400/30 text-white rounded-lg px-4 py-3 outline-none" />
+              <input name="birthDate" type="text" inputMode="numeric" required className="w-full bg-white/10 border border-purple-400/30 text-white rounded-lg px-4 py-3 outline-none" />
               <textarea name="question" placeholder="Qual sua dúvida para as cartas?" required className="w-full bg-white/10 border border-purple-400/30 text-white rounded-lg px-4 py-3 outline-none focus:border-amber-400 min-h-[100px]" />
               <button type="submit" className="w-full bg-gradient-to-r from-amber-400 to-orange-500 text-purple-900 font-bold py-4 rounded-lg shadow-xl hover:scale-105 transition-all">
                 ✨ Continuar para Pagamento

@@ -3,29 +3,18 @@ import React from 'react';
 const TarotForm = ({ formData, setFormData, onSubmit, loading }) => {
   
   const handleDateChange = (e) => {
-    let v = e.target.value.replace(/\D/g, ""); // Remove tudo que não é número
+    let v = e.target.value.replace(/\D/g, "");
     if (v.length > 8) v = v.substring(0, 8);
-    
-    // Aplica a máscara DD/MM/AAAA
     if (v.length > 4) {
       v = v.replace(/(\d{2})(\d{2})(\d{1,4})/, "$1/$2/$3");
     } else if (v.length > 2) {
       v = v.replace(/(\d{2})(\d{1,2})/, "$1/$2");
     }
-    
     setFormData({ ...formData, birthDate: v });
   };
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 bg-white/10 p-6 rounded-xl backdrop-blur-sm">
-      <style>{`
-        /* Esconde o ícone do calendário em navegadores Webkit (Chrome, Edge, Safari) */
-        input::-webkit-calendar-picker-indicator {
-          display: none !important;
-          -webkit-appearance: none;
-        }
-      `}</style>
-      
       <div className="space-y-2">
         <label className="text-purple-200 text-sm">Nome Completo</label>
         <input
@@ -42,10 +31,10 @@ const TarotForm = ({ formData, setFormData, onSubmit, loading }) => {
         <label className="text-purple-200 text-sm">Data de Nascimento</label>
         <input
           required
-          type="text"
-          inputMode="numeric"
+          type="tel" 
+          id="campo_data_manual_v3"
+          name="data_nascimento_sem_calendario"
           autoComplete="off"
-          name="birth_field_manual" 
           maxLength="10"
           className="w-full bg-white/5 border border-purple-500/30 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500"
           value={formData.birthDate || ''}
