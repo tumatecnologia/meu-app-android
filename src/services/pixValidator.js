@@ -4,31 +4,34 @@ export const validatePayment = async (data) => {
   const texto = data.fullText ? data.fullText.toUpperCase().replace(/\s+/g, ' ') : "";
   const nomeObrigatorio = "GUSTAVO SANTOS RIBEIRO";
 
-  // Item 4: Regra dos 90 dias real (Não limpa ao atualizar)
   const agora = new Date().getTime();
   const noventaDiasMs = 90 * 24 * 60 * 60 * 1000;
   let historico = JSON.parse(localStorage.getItem('pix_history_v2') || '[]');
-  
-  // Filtra APENAS o que expirou. O que é novo permanece.
   historico = historico.filter(item => (agora - item.timestamp) < noventaDiasMs);
 
+  // 1. Erro de Duplicidade
   if (historico.some(item => item.id === data.transactionId)) {
-    return { valid: false, details: "Este comprovante já foi utilizado." };
+    return { valid: false, details: "ID JÁ USADO: Este comprovante já foi validado antes." };
   }
 
-  // Item 2: Lista exaustiva de palavras-chave
-  const termosDestino = [
-    "DESTINATARIO", "DESTINATÁRIO", "RECEBEDOR", "FAVORECIDO", 
-    "PARA", "DESTINO", "BENEFICIARIO", "BENEFICIÁRIO", "CREDITADO"
-  ];
+  // 2. Erro de Valor
+  if (amount < minAmount) {
+    return { valid: false, details: `VALOR BAIXO: Identificado R$ ${amount.toFixed(2)}, mas o mínimo é R$ 10,00.` };
+  }
+
+  // 3. Erro de Nome (Aumentamos o alcance para 100 caracteres)
+  const termosDestino = ["DESTINATARIO", "DESTINATÁRIO", "RECEBEDOR", "FAVORECIDO", "PARA", "DESTINO", "BENEFICIARIO", "BENEFICIÁRIO", "CREDITADO"];
   
   let nomeConfirmado = false;
+  let termoEncontrado = "";
+
   for (const termo of termosDestino) {
     const posicao = texto.indexOf(termo);
     if (posicao !== -1) {
-      // Analisa os 80 caracteres após a palavra-chave
-      const trecho = texto.substring(posicao, posicao + 80);
-      if (trecho.includes("GUSTAVO") && trecho.includes("RIBEIRO")) {
+      termoEncontrado = termo;
+      const trecho = texto.substring(posicao, posicao + 100);
+      // Procuramos apenas por partes do nome para evitar erros de leitura (OCR)
+      if (trecho.includes("GUSTAVO") || trecho.includes("SANTOS") || trecho.includes("RIBEIRO")) {
         nomeConfirmado = true;
         break;
       }
@@ -36,14 +39,14 @@ export const validatePayment = async (data) => {
   }
 
   if (!nomeConfirmado) {
-    return { valid: false, details: "Comprovante inválido: Destinatário deve ser GUSTAVO SANTOS RIBEIRO." };
+    return { 
+      valid: false, 
+      details: termoEncontrado 
+        ? `DESTINATÁRIO INCORRETO: Identificamos o termo "${termoEncontrado}", mas seu nome não está logo após ele.` 
+        : "DADOS NÃO LOCALIZADOS: Não conseguimos ler o destinatário. Tente uma foto mais clara." 
+    };
   }
 
-  if (amount < minAmount) {
-    return { valid: false, details: `Valor insuficiente (Mínimo R$ 10,00).` };
-  }
-
-  // Grava o novo ID no histórico
   historico.push({ id: data.transactionId, timestamp: agora });
   localStorage.setItem('pix_history_v2', JSON.stringify(historico));
 
