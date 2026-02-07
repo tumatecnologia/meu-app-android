@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Moon, Heart, Flame, Home as HomeIcon, Eye, Briefcase, Plane, Baby, HeartPulse, Sparkles as SparklesIcon, Lightbulb } from 'lucide-react';
-
 import { Button } from '../components/ui/button';
 import PaymentModal from '../components/tarot/PaymentModal';
 import TarotReading from '../components/tarot/TarotReading';
+import BirthDateInput from '../components/BirthDateInput';
 
 const themes = [
   { id: 'amor', label: 'Amor', icon: Heart, color: 'from-pink-500 to-rose-500' },
@@ -26,6 +26,7 @@ export default function ThreeCardsReading() {
   const [showForm, setShowForm] = useState(false);
   const [userData, setUserData] = useState(null);
   const [isReadingReady, setIsReadingReady] = useState(false);
+  const [birthDate, setBirthDate] = useState("");
 
   const handleThemeSelect = (themeId) => {
     setSelectedTheme(themeId);
@@ -34,19 +35,13 @@ export default function ThreeCardsReading() {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
     setUserData({
-      name: formData.get('name'),
-      birthDate: formData.get('birthDate'),
-      question: formData.get('question')
+      name: new FormData(e.target).get('name'),
+      birthDate: birthDate,
+      question: new FormData(e.target).get('question')
     });
     setShowForm(false);
     setShowPayment(true);
-  };
-
-  const handlePaymentConfirmed = () => {
-    setShowPayment(false);
-    setIsReadingReady(true);
   };
 
   const handleNewReading = () => {
@@ -54,6 +49,7 @@ export default function ThreeCardsReading() {
     setSelectedTheme(null);
     setUserData(null);
     setShowForm(false);
+    setBirthDate("");
   };
 
   const getTheme = () => themes.find(t => t.id === selectedTheme) || themes[0];
@@ -61,11 +57,7 @@ export default function ThreeCardsReading() {
   if (isReadingReady) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-950 via-violet-900 to-purple-950 py-8 px-4">
-        <TarotReading 
-          theme={selectedTheme} 
-          userData={userData} 
-          onNewReading={handleNewReading} 
-        />
+        <TarotReading theme={selectedTheme} userData={userData} onNewReading={handleNewReading} />
       </div>
     );
   }
@@ -73,57 +65,33 @@ export default function ThreeCardsReading() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-950 via-violet-900 to-purple-950 py-8 px-4 text-white">
       <div className="container mx-auto max-w-6xl">
-        <Link to="/">
-          <Button variant="ghost" className="text-purple-200 hover:text-white mb-8">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
-          </Button>
-        </Link>
-
+        <Link to="/"><Button variant="ghost" className="text-purple-200 hover:text-white mb-8"><ArrowLeft className="w-4 h-4 mr-2" /> Voltar</Button></Link>
         {!showForm && !showPayment && (
-          <>
-            <div className="text-center mb-12">
-              <div className="inline-block p-4 bg-purple-400/20 rounded-full mb-4">
-                <Moon className="w-12 h-12 text-purple-400" />
-              </div>
-              <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Leitura de 3 Cartas</h1>
-              <p className="text-purple-200 text-lg">Escolha um tema para sua consulta personalizada</p>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-12">
-              {themes.map((theme) => (
-                <button key={theme.id} onClick={() => handleThemeSelect(theme.id)} className="group relative">
-                  <div className={`bg-gradient-to-br ${theme.color} p-6 rounded-2xl shadow-xl hover:scale-105 transition-all`}>
-                    <theme.icon className="w-8 h-8 text-white mx-auto mb-3" />
-                    <p className="text-white font-semibold">{theme.label}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-
-        {showForm && (
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/10 backdrop-blur-sm border-2 border-purple-400/30 rounded-2xl p-8 max-w-md mx-auto shadow-2xl">
-            <h3 className="text-2xl font-bold text-white mb-4 text-center">Dados da Consulta</h3>
-            <form onSubmit={handleFormSubmit} className="space-y-6">
-              <input name="name" placeholder="Seu Nome Completo" required className="w-full bg-white/10 border border-purple-400/30 text-white rounded-lg px-4 py-3 outline-none focus:border-amber-400" />
-              <input name="birthDate" type="text" inputMode="numeric" required className="w-full bg-white/10 border border-purple-400/30 text-white rounded-lg px-4 py-3 outline-none" />
-              <textarea name="question" placeholder="Qual sua dúvida para as cartas?" required className="w-full bg-white/10 border border-purple-400/30 text-white rounded-lg px-4 py-3 outline-none focus:border-amber-400 min-h-[100px]" />
-              <button type="submit" className="w-full bg-gradient-to-r from-amber-400 to-orange-500 text-purple-900 font-bold py-4 rounded-lg shadow-xl hover:scale-105 transition-all">
-                ✨ Continuar para Pagamento
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-12">
+            {themes.map((theme) => (
+              <button key={theme.id} onClick={() => handleThemeSelect(theme.id)} className="group relative transition-all hover:scale-105">
+                <div className={`bg-gradient-to-br ${theme.color} p-6 rounded-2xl shadow-xl`}>
+                  <theme.icon className="w-8 h-8 text-white mx-auto mb-3" />
+                  <p className="text-white font-semibold text-center">{theme.label}</p>
+                </div>
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="w-full text-purple-300 text-sm">Voltar</button>
+            ))}
+          </div>
+        )}
+        {showForm && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white/10 backdrop-blur-sm border-2 border-purple-400/30 rounded-2xl p-8 max-w-md mx-auto shadow-2xl text-center">
+            <h3 className="text-2xl font-bold mb-6">Dados da Consulta</h3>
+            <form onSubmit={handleFormSubmit} className="space-y-4">
+              <input name="name" placeholder="Seu Nome Completo" required className="w-full bg-white/10 border border-purple-400/30 text-white rounded-lg px-4 py-3 outline-none focus:border-amber-400 placeholder-white/50" />
+              <BirthDateInput value={birthDate} onChange={setBirthDate} />
+              <textarea name="question" placeholder="Sua dúvida para as cartas..." required className="w-full bg-white/10 border border-purple-400/30 text-white rounded-lg px-4 py-3 outline-none focus:border-amber-400 min-h-[100px] placeholder-white/50" />
+              <button type="submit" className="w-full bg-gradient-to-r from-amber-400 to-orange-500 text-purple-900 font-bold py-4 rounded-lg shadow-xl">✨ Continuar</button>
+              <button type="button" onClick={() => setShowForm(false)} className="w-full text-purple-300 text-sm mt-4">Voltar</button>
             </form>
           </motion.div>
         )}
-
         {showPayment && (
-          <PaymentModal 
-            isOpen={showPayment} 
-            onClose={() => setShowPayment(false)} 
-            onPaymentConfirmed={handlePaymentConfirmed}
-            theme={getTheme().label}
-          />
+          <PaymentModal isOpen={showPayment} onClose={() => setShowPayment(false)} onPaymentConfirmed={() => { setShowPayment(false); setIsReadingReady(true); }} theme={getTheme().label} />
         )}
       </div>
     </div>
