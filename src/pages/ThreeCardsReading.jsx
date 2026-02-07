@@ -44,6 +44,11 @@ export default function ThreeCardsReading() {
     setShowPayment(true);
   };
 
+  const handlePaymentConfirmed = () => {
+    setShowPayment(false);
+    setIsReadingReady(true);
+  };
+
   const handleNewReading = () => {
     setIsReadingReady(false);
     setSelectedTheme(null);
@@ -91,7 +96,12 @@ export default function ThreeCardsReading() {
           </motion.div>
         )}
         {showPayment && (
-          <PaymentModal isOpen={showPayment} onClose={() => setShowPayment(false)} onPaymentConfirmed={() => { setShowPayment(false); setIsReadingReady(true); }} theme={getTheme().label} />
+          <PaymentModal 
+            isOpen={showPayment} 
+            onClose={() => setShowPayment(false)} 
+            onPaymentConfirmed={handlePaymentConfirmed} 
+            theme={getTheme().label} 
+          />
         )}
       </div>
     </div>
