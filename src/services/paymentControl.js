@@ -1,7 +1,7 @@
 import { createWorker } from 'tesseract.js';
 import { createClient } from '@supabase/supabase-js';
 
-// Configuração do seu Novo Cofre Eterno (Supabase)
+// Configuração do Supabase do Gustavo
 const supabase = createClient(
   'https://npmdvkgsklklineqoriw.supabase.co',
   'sb_publicable_qBUSPrtnhIKTOPh7VLVig_A2yakWvU'
@@ -9,7 +9,7 @@ const supabase = createClient(
 
 const PaymentControlService = {
   processarArquivo: async (file) => {
-    console.log("🔍 Verificando ID no Banco de Dados Supabase...");
+    console.log("🔍 Verificando ID na coluna 'contemo' do Supabase...");
     
     try {
       // 1. Extrair texto da imagem (OCR)
@@ -25,7 +25,7 @@ const PaymentControlService = {
 
       const texto = text.toUpperCase();
       
-      // Busca o ID de Transação (ex: E18236120...)
+      // Busca o ID de Transação no texto lido
       const matchID = texto.match(/ID[\s\D]+([A-Z0-9]{15,})/) || texto.match(/([A-Z0-9]{20,})/);
       const transactionID = matchID ? matchID[1] : null;
 
@@ -33,12 +33,11 @@ const PaymentControlService = {
         return { valido: false, motivo: "ID da transação não localizado. Tire uma foto mais clara." };
       }
 
-      // 2. CONSULTA AO COFRE (Supabase)
-      // Verificamos se esse ID já existe na coluna "conteudo"
+      // 2. CONSULTA AO COFRE (Usando a coluna 'contemo')
       const { data: idExistente, error: errorBusca } = await supabase
         .from('ids')
         .select('*')
-        .ilike('conteudo', `%${transactionID}%`);
+        .ilike('contemo', `%${transactionID}%`);
 
       if (idExistente && idExistente.length > 0) {
         return {
@@ -47,12 +46,11 @@ const PaymentControlService = {
         };
       }
 
-      // 3. REGISTRO NO COFRE
-      // Se é inédito, salvamos no banco para ninguém usar de novo.
+      // 3. REGISTRO NO COFRE (Salvando na coluna 'contemo')
       const { error: errorInsert } = await supabase
         .from('ids')
         .insert([{ 
-            conteudo: `ID_VALIDADO: ${transactionID} | Data: ${new Date().toLocaleString('pt-BR')}` 
+            contemo: `ID_VALIDADO: ${transactionID} | Data: ${new Date().toLocaleString('pt-BR')}` 
         }]);
 
       if (errorInsert) throw errorInsert;
@@ -65,7 +63,7 @@ const PaymentControlService = {
 
     } catch (error) {
       console.error("Erro na validação Supabase:", error);
-      // Plano B: Se o banco falhar, vamos liberar para não travar o cliente
+      // Plano B: Se o banco falhar, liberamos para não perder a venda
       return { valido: true, idEncontrado: "OFFLINE_OK", mensagem: "Validado (Modo Offline)" };
     }
   }
