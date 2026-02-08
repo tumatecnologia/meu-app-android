@@ -4,6 +4,7 @@ import PaymentControlService from '../../services/paymentControl.js';
 
 const PaymentUploader = ({ onValidationComplete, onCancel }) => {
   const [processando, setProcessando] = useState(false);
+  const [debugTexto, setDebugTexto] = useState("");
   const [resultado, setResultado] = useState(null);
   const [preview, setPreview] = useState(null);
   const fileInputRef = useRef(null);
