@@ -1,47 +1,8 @@
 {
-  "transactions": [
+  "ids_utilizados": [
     {
-      "id": "1",
-      "transactionId": "PIX123456",
-      "userId": "user123",
-      "amount": 50,
-      "paymentDate": "2024-01-15T10:30:00Z",
-      "createdAt": "2024-01-15T10:35:00Z"
-    },
-    {
-      "id": "7645",
-      "transactionId": "FAVORECIDO",
-      "amount": 25,
-      "beneficiary": "GUSTAVO SANTOS RIBEIRO",
-      "paymentDate": "2025-12-15T01:37:07.771Z",
-      "createdAt": "2025-12-15T01:37:07.821Z"
-    },
-    {
-      "id": "ff5b",
-      "transactionId": "TEST_DUP_1766088313324",
-      "beneficiary": "GUSTAVO SANTOS RIBEIRO",
-      "amount": 10,
-      "paymentDate": "2025-12-18",
-      "createdAt": "2025-12-18T20:05:13.324Z",
-      "status": "TESTE"
-    },
-    {
-      "id": "49e2",
-      "transactionId": "PIX_CRITICO_1766099187374",
-      "beneficiary": "GUSTAVO SANTOS RIBEIRO",
-      "amount": 10,
-      "paymentDate": "2025-12-18",
-      "createdAt": "2025-12-18T23:06:27.418Z",
-      "status": "APROVADO"
-    },
-    {
-      "id": "8107",
-      "transactionId": "TEST_MONITOR_1766099198",
-      "beneficiary": "TEST",
-      "amount": 10,
-      "paymentDate": "2025-12-18",
-      "createdAt": "2025-12-18T23:06:38+00:00",
-      "status": "TEST"
+      "id": "60701190202602072216DY5VGSTNVXP",
+      "dataRegistro": "2026-02-08T17:51:02.646Z"
     }
   ]
 }
