@@ -42,7 +42,7 @@ const PaymentControlService = {
         return { valido: false };
       }
 
-      // 3. VALIDAÇÃO DE DATA SUPER ROBUSTA (NOVIDADE)
+      // 3. VALIDAÇÃO DE DATA SUPER ROBUSTA
       const hoje = new Date();
       const dataFormatada = (data) => data.toLocaleDateString('pt-BR');
       const d1 = dataFormatada(hoje); // DD/MM/AAAA
@@ -50,19 +50,15 @@ const PaymentControlService = {
       const d3 = d1.replace(/\//g, '-'); // DD-MM-AAAA
       const d4 = d1.slice(0, 5); // DD/MM
 
-      // MAPEAMENTO DE MESES POR EXTENSO
       const meses = {
         "JAN": "01", "FEV": "02", "MAR": "03", "ABR": "04", "MAI": "05", "JUN": "06",
         "JUL": "07", "AGO": "08", "SET": "09", "OUT": "10", "NOV": "11", "DEZ": "12"
       };
 
-      // Regex para procurar formatos: DD/MM/AAAA, DD.MM.AAAA, DD-MM-AAAA, DD/MM/AA E DD MES AAAA
-      // Tenta achar padrões numéricos ou alfanuméricos de data
       const regexData = /(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|(\d{2}\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\s+\d{2,4})/i;
       const dataMatch = textoLimpo.match(regexData);
       let dataNoComprovante = dataMatch ? dataMatch[0] : null;
 
-      // CONVERSÃO DE MÊS POR EXTENSO PARA NÚMERO
       if (dataNoComprovante) {
         for (const [key, value] of Object.entries(meses)) {
           if (dataNoComprovante.includes(key)) {
@@ -72,7 +68,6 @@ const PaymentControlService = {
         }
       }
 
-      // Verifica se a data lida corresponde a alguma variação da data de hoje
       const dataValida = [d1, d2, d3, d4].some(variacao => dataNoComprovante?.includes(variacao));
 
       if (!dataValida) {
@@ -80,8 +75,24 @@ const PaymentControlService = {
         return { valido: false };
       }
 
-      // 4. REGISTRO
-      const conteudoParaGravar = `ID: ${transactionID} | DATA_OCR: ${dataNoComprovante} | REGISTRO: ${new Date().toLocaleString('pt-BR')}`;
+      // 4. VALIDAÇÃO DE VALOR (NOVIDADE)
+      // Procura por R$, vírgula e números próximos
+      const regexValor = /R\$\s?(\d{1,3}(?:\.\d{3})*,\d{2})/i;
+      const valorMatch = textoLimpo.match(regexValor);
+      let valorComprovante = 0;
+
+      if (valorMatch) {
+        // Converte "R$ 10,00" para 10.00 (número)
+        valorComprovante = parseFloat(valorMatch[1].replace(/\./g, '').replace(',', '.'));
+      }
+
+      if (!valorMatch || valorComprovante < 10.00) {
+        alert(`❌ VALOR INSUFICIENTE!\n\nValor detectado: R$ ${valorComprovante.toFixed(2)}\nValor mínimo: R$ 10.00\n\nPor favor, realize um novo pagamento.`);
+        return { valido: false };
+      }
+
+      // 5. REGISTRO
+      const conteudoParaGravar = `ID: ${transactionID} | DATA_OCR: ${dataNoComprovante} | VALOR: R$ ${valorComprovante.toFixed(2)} | REGISTRO: ${new Date().toLocaleString('pt-BR')}`;
       
       const response = await fetch(SUPABASE_URL, {
         method: 'POST',
@@ -96,7 +107,7 @@ const PaymentControlService = {
 
       if (!response.ok) throw new Error("Erro ao gravar");
 
-      alert("✅ SUCESSO! ID e Data validados.");
+      alert("✅ SUCESSO! ID, Data e Valor validados.");
       return { valido: true, idEncontrado: transactionID };
 
     } catch (error) {
