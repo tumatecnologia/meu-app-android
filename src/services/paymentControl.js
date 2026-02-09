@@ -1,7 +1,7 @@
 import { createWorker } from 'tesseract.js';
 import { createClient } from '@supabase/supabase-js';
 
-// Configuração Gustavo Santos Ribeiro
+// Configuração oficial - Gustavo Santos Ribeiro
 const supabase = createClient(
   'https://npmdvkgsklklineqoriw.supabase.co',
   'sb_publicable_qBUSPrtnhIKTOPh7VLVig_A2yakWvU'
@@ -10,7 +10,7 @@ const supabase = createClient(
 const PaymentControlService = {
   processarArquivo: async (file) => {
     try {
-      // 1. OCR - Leitura do comprovante
+      console.log("Iniciando processamento...");
       const reader = new FileReader();
       const imagemData = await new Promise((resolve) => {
         reader.onload = (e) => resolve(e.target.result);
@@ -21,25 +21,34 @@ const PaymentControlService = {
       const { data: { text } } = await worker.recognize(imagemData);
       await worker.terminate();
 
-      // 2. Extração do ID (busca 15 ou mais caracteres alfanuméricos)
-      const transactionID = text.toUpperCase().match(/([A-Z0-9]{15,})/)?.[0] || "ID_" + Date.now();
+      // Extrai o ID de transação do texto
+      const textoLimpo = text.toUpperCase();
+      const matchID = textoLimpo.match(/([A-Z0-9]{15,})/);
+      const transactionID = matchID ? matchID[0] : "ID_MANUAL_" + Date.now();
 
-      // 3. Gravação no Banco (Coluna: contemo)
-      // O campo 'id' (int8) o banco gera sozinho.
-      const { error } = await supabase
+      console.log("Tentando gravar no banco o ID:", transactionID);
+
+      // Tenta gravar na coluna 'contemo'
+      const { data, error } = await supabase
         .from('ids')
         .insert([{ 
           contemo: `ID: ${transactionID} | DATA: ${new Date().toLocaleString('pt-BR')}` 
         }]);
 
-      if (error) throw error;
+      if (error) {
+        // Se o Supabase rejeitar, o alert vai nos dizer por quê
+        alert("⚠️ ERRO NO BANCO: " + error.message);
+        throw error;
+      }
 
+      // Se chegar aqui, gravou!
+      alert("✅ SUCESSO! O dado apareceu no Supabase.");
       return { valido: true, idEncontrado: transactionID };
 
     } catch (error) {
-      console.error("Erro na operação:", error);
-      // Se o banco falhar, não travamos o cliente
-      return { valido: true, idEncontrado: "OFFLINE_OK" };
+      console.error("Erro Geral:", error);
+      // Plano B para não travar o cliente
+      return { valido: true, idEncontrado: "CONTINGENCIA_OK" };
     }
   }
 };
