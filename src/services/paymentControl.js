@@ -1,6 +1,6 @@
 import { createWorker } from 'tesseract.js';
 
-// URL CORRIGIDA (com o 'kgg') e CHAVE OFICIAL (extraídas dos seus prints)
+// URL E CHAVE OFICIAIS (Ajustadas com o 'kgg' e a chave correta)
 const SUPABASE_URL = 'https://npmdvkggsklkideqoriw.supabase.co/rest/v1/ids';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wbWR2a2dnc2tsa2lkZXFvcml3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzMyMDAsImV4cCI6MjA4NjE0OTIwMH0.y-X0NS-_9BV7RhtSUOteLhaUPnt8Tkf24NlUikR8Ifo';
 
@@ -13,16 +13,14 @@ const PaymentControlService = {
         reader.readAsDataURL(file);
       });
 
-      // 1. Inicia leitura da imagem
       const worker = await createWorker('por');
       const { data: { text } } = await worker.recognize(imagemData);
       await worker.terminate();
 
-      // 2. Extrai o ID
       const transactionID = text.toUpperCase().match(/([A-Z0-9]{15,})/)?.[0] || "ID_" + Date.now();
       const conteudoParaGravar = `ID: ${transactionID} | DATA: ${new Date().toLocaleString('pt-BR')}`;
 
-      // 3. ENVIO DIRETO (Contorna erros de biblioteca e CORS)
+      // ENVIO PARA A COLUNA 'dado'
       const response = await fetch(SUPABASE_URL, {
         method: 'POST',
         headers: {
@@ -31,7 +29,7 @@ const PaymentControlService = {
           'Content-Type': 'application/json',
           'Prefer': 'return=minimal'
         },
-        body: JSON.stringify({ contemo: conteudoParaGravar })
+        body: JSON.stringify({ dado: conteudoParaGravar }) // Nome da coluna alterado aqui
       });
 
       if (!response.ok) {
@@ -44,7 +42,7 @@ const PaymentControlService = {
 
     } catch (error) {
       console.error("Erro Final:", error);
-      alert("❌ Falha na conexão. Verifique o console para mais detalhes.");
+      alert("❌ Falha na conexão ou coluna não encontrada. Verifique o Supabase.");
       return { valido: false };
     }
   }
