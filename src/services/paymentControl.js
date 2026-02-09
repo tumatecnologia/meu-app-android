@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // Configuração oficial - Gustavo Santos Ribeiro
 const supabase = createClient(
-  'https://npmdvkgsklklineqoriw.supabase.co',
+  'https://npmdvkgsklklideqoriw.supabase.co',
   'sb_publicable_qBUSPrtnhIKTOPh7VLVig_A2yakWvU'
 );
 
