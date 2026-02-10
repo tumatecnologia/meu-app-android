@@ -7,6 +7,12 @@ import TarotCardComponent from '../components/tarot/TarotCardComponent';
 import PaymentModal from '../components/tarot/PaymentModal';
 import InterpretationDisplay from '../components/tarot/InterpretationDisplay';
 import { base44 } from '../api/base44Client';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  'https://npmdvkggsklkideqoriw.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wbWR2a2dnc2tsa2lkZXFvcml3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzMyMDAsImV4cCI6MjA4NjE0OTIwMH0.y-X0NS-_9BV7RhtSUOteLhaUPnt8Tkf24NlUikR8Ifo'
+);
 
 const themes = [
   { id: 'amor', label: 'Amor', icon: Heart, color: 'from-pink-500 to-rose-500' },
@@ -29,9 +35,9 @@ const ConsultasParticulares = () => (
     <div className="absolute top-4 right-4 text-amber-400/30 text-2xl">✨</div>
     <div className="text-5xl mb-6">🔮</div>
     <h3 className="text-3xl font-black bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 bg-clip-text text-transparent mb-4 uppercase tracking-tighter">Consultas Particulares</h3>
-    <p className="text-purple-100 text-lg mb-8 leading-relaxed font-medium">Deseja uma tiragem personalizada e profunda? Agende sua consulta diretamente pelo WhatsApp para uma análise completa da sua vida!</p>
+    <p className="text-purple-100 text-lg mb-8 leading-relaxed font-medium">Deseja uma tiragem personalizada e profunda? Agende sua consulta diretamente pelo WhatsApp!</p>
     <a href="https://wa.me/5512996764694" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-4 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 text-purple-950 px-12 py-5 rounded-full font-black text-xl shadow-[0_0_30px_rgba(251,191,36,0.4)] hover:scale-105 transition-all uppercase tracking-tight">
-      <MessageSquare className="w-8 h-8" /> Chamar no WhatsApp
+      <MessageSquare className="w-8 h-8" /> WhatsApp
     </a>
   </div>
 );
@@ -70,9 +76,11 @@ export default function ThreeCardsReading() {
           });
         }
       }
+
       const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Leitura de tarô para ${personInfo.name}. Pergunta: ${personInfo.question}`
+        prompt: `Leitura de tarô para ${personInfo.name}. Pergunta: ${personInfo.question}. Tema: ${selectedTheme}`
       });
+
       const newReading = await base44.entities.Reading.create({
         type: 'three_cards',
         person_name: personInfo.name,
@@ -81,9 +89,19 @@ export default function ThreeCardsReading() {
         cards: selectedCards,
         interpretation: response.content
       });
+
+      await supabase.from('ids').insert([{ 
+        dado: `USER: ${personInfo.name} | ID: ${paymentData.idEncontrado} | THEME: ${selectedTheme} | DATE: ${new Date().toISOString()}` 
+      }]);
+
       setReading(newReading);
       setTimeout(() => setRevealedCards([true, true, true]), 1000);
-    } catch (e) { console.error(e); } finally { setGenerating(false); }
+    } catch (e) { 
+      console.error("Erro na leitura:", e); 
+      alert("Erro ao consultar o oráculo. Tente novamente.");
+    } finally { 
+      setGenerating(false); 
+    }
   };
 
   return (
@@ -91,7 +109,6 @@ export default function ThreeCardsReading() {
       <div className="container mx-auto max-w-6xl">
         <Link to="/"><Button variant="ghost" className="text-purple-200 mb-8"><ArrowLeft className="w-4 h-4 mr-2" /> Voltar</Button></Link>
 
-        {/* TEMAS */}
         {!reading && !generating && !showForm && !showPayment && (
           <div className="text-center">
             <h1 className="text-4xl font-bold mb-12 text-white">Selecione o seu Tema</h1>
@@ -106,7 +123,6 @@ export default function ThreeCardsReading() {
           </div>
         )}
 
-        {/* FORMULÁRIO */}
         {showForm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-md mx-auto bg-black/40 border border-white/10 rounded-3xl p-8 backdrop-blur-md mb-12">
             <h2 className="text-2xl font-bold text-center mb-6">Seus Dados</h2>
@@ -121,7 +137,6 @@ export default function ThreeCardsReading() {
 
         {generating && <div className="text-center py-20 animate-pulse text-2xl font-bold">🔮 Consultando o Oráculo...</div>}
 
-        {/* LEITURA FINAL */}
         {reading && (
           <div className="space-y-12">
             <div className="flex flex-wrap justify-center gap-8">
@@ -131,14 +146,19 @@ export default function ThreeCardsReading() {
             </div>
             {revealedCards.every(r => r) && (
               <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md max-w-4xl mx-auto mb-12">
-                <InterpretationDisplay interpretation={reading.interpretation} cards={reading.cards} theme={selectedTheme} personName={reading.person_name} birthDate={reading.birth_date} />
+                <InterpretationDisplay 
+                  interpretation={reading.interpretation} 
+                  cards={reading.cards} 
+                  theme={selectedTheme} 
+                  personName={reading.person_name} 
+                  birthDate={reading.birth_date} 
+                />
               </div>
             )}
             <div className="text-center"><button onClick={() => window.location.reload()} className="bg-white/10 text-white px-8 py-3 rounded-full hover:bg-white/20 transition-all">Nova Consulta</button></div>
           </div>
         )}
 
-        {/* ANÚNCIO NO FINAL DE TODAS AS ETAPAS */}
         {!generating && <ConsultasParticulares />}
 
         {showPayment && <PaymentModal isOpen={showPayment} onClose={() => setShowPayment(false)} onPaymentConfirmed={handlePaymentConfirmed} theme={selectedTheme} />}

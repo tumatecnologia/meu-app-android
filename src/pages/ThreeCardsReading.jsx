@@ -6,12 +6,12 @@ import { Button } from '../components/ui/button';
 import TarotCardComponent from '../components/tarot/TarotCardComponent';
 import PaymentModal from '../components/tarot/PaymentModal';
 import InterpretationDisplay from '../components/tarot/InterpretationDisplay';
-import { createClient } from '@supabase/supabase-js'; // IMPORTANTE: Usando Supabase agora
+import { base44 } from '../api/base44Client';
+import { createClient } from '@supabase/supabase-js';
 
-// Configuração do seu Banco Eterno
 const supabase = createClient(
-  'https://npmdvkgsklklineqoriw.supabase.co',
-  'sb_publicable_qBUSPrtnhIKTOPh7VLVig_A2yakWvU'
+  'https://npmdvkggsklkideqoriw.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wbWR2a2dnc2tsa2lkZXFvcml3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzMyMDAsImV4cCI6MjA4NjE0OTIwMH0.y-X0NS-_9BV7RhtSUOteLhaUPnt8Tkf24NlUikR8Ifo'
 );
 
 const themes = [
@@ -77,33 +77,30 @@ export default function ThreeCardsReading() {
         }
       }
 
-      // 1. SALVAR NO SUPABASE (BANCO ETERNO)
-      const novoRegistro = {
-        conteudo: JSON.stringify({
-          person_name: personInfo.name,
-          birth_date: personInfo.birthDate,
-          question: personInfo.question,
-          theme: selectedTheme,
-          cards: selectedCards,
-          payment: paymentData
-        })
-      };
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `Leitura de tarô para ${personInfo.name}. Pergunta: ${personInfo.question}. Tema: ${selectedTheme}`
+      });
 
-      await supabase.from('ids').insert([novoRegistro]);
-
-      // 2. MOSTRAR NA TELA (Simulando a leitura)
-      setReading({
+      const newReading = await base44.entities.Reading.create({
+        type: 'three_cards',
         person_name: personInfo.name,
         birth_date: personInfo.birthDate,
+        theme: selectedTheme,
         cards: selectedCards,
-        interpretation: "As cartas foram lançadas e guardadas no oráculo eterno. Siga sua intuição."
+        interpretation: response.content
       });
-      
+
+      await supabase.from('ids').insert([{ 
+        dado: `USER: ${personInfo.name} | ID: ${paymentData.idEncontrado} | THEME: ${selectedTheme} | DATE: ${new Date().toISOString()}` 
+      }]);
+
+      setReading(newReading);
       setTimeout(() => setRevealedCards([true, true, true]), 1000);
     } catch (e) { 
-        console.error("Erro ao salvar no Supabase:", e); 
+      console.error("Erro na leitura:", e); 
+      alert("Erro ao consultar o oráculo. Tente novamente.");
     } finally { 
-        setGenerating(false); 
+      setGenerating(false); 
     }
   };
 
@@ -148,9 +145,14 @@ export default function ThreeCardsReading() {
               ))}
             </div>
             {revealedCards.every(r => r) && (
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md max-w-4xl mx-auto mb-12 text-center">
-                 <h2 className="text-2xl font-bold mb-4">Leitura de {reading.person_name}</h2>
-                 <p className="text-purple-200 italic">"As respostas estão no banco de dados eterno agora."</p>
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md max-w-4xl mx-auto mb-12">
+                <InterpretationDisplay 
+                  interpretation={reading.interpretation} 
+                  cards={reading.cards} 
+                  theme={selectedTheme} 
+                  personName={reading.person_name} 
+                  birthDate={reading.birth_date} 
+                />
               </div>
             )}
             <div className="text-center"><button onClick={() => window.location.reload()} className="bg-white/10 text-white px-8 py-3 rounded-full hover:bg-white/20 transition-all">Nova Consulta</button></div>
