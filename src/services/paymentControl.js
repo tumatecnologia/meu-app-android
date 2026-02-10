@@ -75,19 +75,19 @@ const PaymentControlService = {
         return { valido: false };
       }
 
-      // 4. VALIDAÇÃO DE VALOR (NOVIDADE)
-      // Procura por R$, vírgula e números próximos
-      const regexValor = /R\$\s?(\d{1,3}(?:\.\d{3})*,\d{2})/i;
+      // 4. VALIDAÇÃO DE VALOR (VERSÃO 4.1 - MAIS ROBUSTA)
+      // Captura o valor mesmo que o R$ falhe, procurando por números no formato 0,00
+      const regexValor = /(?:R\$|VALOR|PAGO)?\s?(\d{1,3}(?:\.\d{3})*,\d{2})/i;
       const valorMatch = textoLimpo.match(regexValor);
       let valorComprovante = 0;
 
       if (valorMatch) {
-        // Converte "R$ 10,00" para 10.00 (número)
         valorComprovante = parseFloat(valorMatch[1].replace(/\./g, '').replace(',', '.'));
       }
 
-      if (!valorMatch || valorComprovante < 10.00) {
-        alert(`❌ VALOR INSUFICIENTE!\n\nValor detectado: R$ ${valorComprovante.toFixed(2)}\nValor mínimo: R$ 10.00\n\nPor favor, realize um novo pagamento.`);
+      if (valorComprovante < 10.00) {
+        const valorExibicao = valorComprovante > 0 ? `R$ ${valorComprovante.toFixed(2)}` : "Não detectado";
+        alert(`❌ VALOR INSUFICIENTE OU NÃO LIDO!\n\nValor detectado: ${valorExibicao}\nValor mínimo: R$ 10,00\n\nCertifique-se de que o valor do PIX aparece claramente.`);
         return { valido: false };
       }
 
