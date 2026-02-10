@@ -42,12 +42,30 @@ const PaymentControlService = {
         return { valido: false };
       }
 
-      // 3. NOVA REGRA: VALIDAÇÃO DE BENEFICIÁRIO (GUSTAVO)
-      // Verifica se após as palavras-chave aparece o nome do Gustavo
-      const regexNome = /(?:PARA|BENEFICIÁRIO|BENEFICIARIO|DESTINO|DESTINATÁRIO|DESTINATARIO|RECEBEDOR|FAVORECIDO)\s*:?\s*(GUSTAVO SANTOS RIBEIRO|GUSTAVO S\.?\s?RIBEIRO)/i;
+      // 3. NOVA REGRA: VALIDAÇÃO DE BENEFICIÁRIO (GUSTAVO) - ESTRITA
+      // Procura palavras de recebimento num raio de até 50 caracteres antes do nome
+      const palavrasRecebimento = ["PARA", "BENEFICIÁRIO", "BENEFICIARIO", "DESTINO", "DESTINATÁRIO", "DESTINATARIO", "RECEBEDOR", "FAVORECIDO"];
+      const variacoesNome = ["GUSTAVO SANTOS RIBEIRO", "GUSTAVO S. RIBEIRO", "GUSTAVO S RIBEIRO"];
       
-      if (!regexNome.test(textoLimpo)) {
-        alert("❌ DESTINATÁRIO INCORRETO!\n\nO comprovante deve ser destinado a Gustavo Santos Ribeiro.");
+      let nomeValidado = false;
+      
+      for (let nome of variacoesNome) {
+        if (textoLimpo.includes(nome)) {
+          // Encontra a posição do nome
+          const indexNome = textoLimpo.indexOf(nome);
+          // Pega um trecho de texto antes do nome (contexto)
+          const contextoAntes = textoLimpo.substring(Math.max(0, indexNome - 60), indexNome);
+          
+          // Verifica se alguma palavra de recebimento está nesse contexto
+          if (palavrasRecebimento.some(palavra => contextoAntes.includes(palavra))) {
+            nomeValidado = true;
+            break;
+          }
+        }
+      }
+      
+      if (!nomeValidado) {
+        alert("❌ DESTINATÁRIO INCORRETO OU NOME NÃO ENCONTRADO!\n\nO comprovante deve mostrar Gustavo Santos Ribeiro como recebedor.");
         return { valido: false };
       }
 
