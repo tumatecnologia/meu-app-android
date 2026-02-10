@@ -23,7 +23,7 @@ const PaymentControlService = {
 
       const textoLimpo = text.toUpperCase();
 
-      // 1. EXTRAÇÃO DO ID
+      // 1. EXTRAÇÃO DO ID (NÃO MODIFICADO)
       const transactionID = textoLimpo.match(/([A-Z0-9]{15,})/)?.[0];
       
       if (!transactionID) {
@@ -31,7 +31,7 @@ const PaymentControlService = {
         return { valido: false };
       }
 
-      // 2. VERIFICAÇÃO DE DUPLICIDADE
+      // 2. VERIFICAÇÃO DE DUPLICIDADE (NÃO MODIFICADO)
       const checkResponse = await fetch(`${SUPABASE_URL}?dado=ilike.*${transactionID}*`, {
         method: 'GET',
         headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
@@ -42,7 +42,16 @@ const PaymentControlService = {
         return { valido: false };
       }
 
-      // 3. VALIDAÇÃO DE VALOR
+      // 3. NOVA REGRA: VALIDAÇÃO DE BENEFICIÁRIO (GUSTAVO)
+      // Verifica se após as palavras-chave aparece o nome do Gustavo
+      const regexNome = /(?:PARA|BENEFICIÁRIO|BENEFICIARIO|DESTINO|DESTINATÁRIO|DESTINATARIO|RECEBEDOR|FAVORECIDO)\s*:?\s*(GUSTAVO SANTOS RIBEIRO|GUSTAVO S\.?\s?RIBEIRO)/i;
+      
+      if (!regexNome.test(textoLimpo)) {
+        alert("❌ DESTINATÁRIO INCORRETO!\n\nO comprovante deve ser destinado a Gustavo Santos Ribeiro.");
+        return { valido: false };
+      }
+
+      // 4. VALIDAÇÃO DE VALOR
       const regexValor = /(?:R\$|VALOR|PAGO)?\s?(\d{1,3}(?:\.\d{3})*,\d{2})/i;
       const valorMatch = textoLimpo.match(regexValor);
       let valorComprovante = 0;
@@ -57,7 +66,7 @@ const PaymentControlService = {
         return { valido: false };
       }
 
-      // 4. REGISTRO (Removida a data do OCR, mantida apenas a data do sistema)
+      // 5. REGISTRO (BANCO DE DADOS - NÃO MODIFICADO)
       const conteudoParaGravar = `ID: ${transactionID} | VALOR: R$ ${valorComprovante.toFixed(2)} | REGISTRO: ${new Date().toLocaleString('pt-BR')}`;
       
       const response = await fetch(SUPABASE_URL, {
