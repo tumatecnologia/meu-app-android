@@ -1,67 +1,70 @@
-import React, { useState } from 'react';
-import { validatePixReceipt } from '../../services/paymentControl';
-import { createWorker } from 'tesseract.js';
+import React, { useState, useRef } from 'react';
+import { Upload, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import PaymentControlService from '../../services/paymentControl.js';
 
-export default function PaymentUploader({ onValidationComplete, onCancel }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+const PaymentUploader = ({ onValidationComplete, onCancel }) => {
+  const [processando, setProcessando] = useState(false);
+  const [debugTexto, setDebugTexto] = useState("");
+  const [resultado, setResultado] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const fileInputRef = useRef(null);
 
-  const processImage = async (e) => {
-    const file = e.target.files[0];
+  const handleFileSelect = async (event) => {
+    const file = event.target.files[0];
     if (!file) return;
 
-    setLoading(true);
-    setError(null);
+    const reader = new FileReader();
+    reader.onloadend = () => { setPreview(reader.result); };
+    reader.readAsDataURL(file);
+
+    setProcessando(true);
+    setResultado(null);
 
     try {
-      const worker = await createWorker('por');
-      const { data: { text } } = await worker.recognize(file);
-      await worker.terminate();
+      const res = await PaymentControlService.processarArquivo(file);
+      setResultado(res);
+      setProcessando(false);
 
-      // Aqui chamamos o serviço que já limpamos (ID + VALOR + NOME)
-      const result = validatePixReceipt(text);
-
-      if (result.success) {
-        onValidationComplete(result);
-      } else {
-        setError(result.error);
+      if (res.valido) {
+        // AQUI ESTÁ A CHAVE: Chamando a função que o Modal espera
+        if (onValidationComplete) {
+          onValidationComplete(res);
+        }
       }
-    } catch (err) {
-      setError("Erro ao ler a imagem. Tente novamente.");
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      setProcessando(false);
+      setResultado({ valido: false, motivo: 'Erro no sistema' });
     }
   };
 
   return (
-    <div className="space-y-4">
-      <div className="bg-black/20 p-6 rounded-2xl border-2 border-dashed border-white/10 text-center">
-        {loading ? (
-          <div className="py-4">
-            <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-            <p className="text-white">Lendo comprovante...</p>
-          </div>
-        ) : (
-          <>
-            <p className="text-gray-400 mb-4 text-sm">Tire um print ou foto do comprovante</p>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={processImage}
-              className="hidden"
-              id="upload-input"
-            />
-            <label
-              htmlFor="upload-input"
-              className="inline-block px-6 py-3 bg-white text-black font-bold rounded-xl cursor-pointer hover:bg-gray-200 transition-colors"
-            >
-              SELECIONAR IMAGEM
-            </label>
-          </>
+    <div className="w-full max-w-xs mx-auto p-2">
+      <input ref={fileInputRef} type="file" accept="image/*,.pdf" capture="environment" onChange={handleFileSelect} className="hidden" disabled={processando} />
+      
+      <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-4 shadow-md text-center">
+        <h2 className="text-lg font-bold text-white mb-4">📱 Enviar Comprovante</h2>
+        
+        <div onClick={() => !processando && fileInputRef.current?.click()} className={`p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all ${processando ? 'border-amber-500 bg-amber-500/10' : 'border-purple-500/50 hover:bg-purple-500/10'}`}>
+          {processando ? (
+            <Loader2 className="w-10 h-10 text-amber-400 animate-spin mx-auto" />
+          ) : resultado?.valido ? (
+            <CheckCircle className="w-10 h-10 text-green-500 mx-auto" />
+          ) : (
+            <Upload className="w-10 h-10 text-purple-300 mx-auto" />
+          )}
+          <p className="text-white text-sm mt-2 font-bold">
+            {processando ? 'Validando...' : resultado?.valido ? 'APROVADO!' : 'CLIQUE PARA ENVIAR'}
+          </p>
+        </div>
+
+        {resultado && !resultado.valido && (
+          <p className="text-red-400 text-xs mt-2 font-bold">{resultado.motivo}</p>
         )}
+
+        <button onClick={onCancel} className="mt-4 text-gray-400 text-xs hover:text-white underline">Voltar para instruções</button>
       </div>
-      {error && <p className="text-red-400 text-center font-bold bg-red-400/10 p-2 rounded-lg">{error}</p>}
-      <button onClick={onCancel} className="w-full text-gray-500 text-sm">Voltar</button>
     </div>
   );
-}
+};
+
+export default PaymentUploader;
