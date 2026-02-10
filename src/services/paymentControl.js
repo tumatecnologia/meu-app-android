@@ -1,6 +1,7 @@
 import { createWorker } from 'tesseract.js';
 import { createClient } from '@supabase/supabase-js';
 
+// Configuração do seu Supabase
 const supabaseUrl = 'https://pydfytfjsnsvayzlyoxh.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5ZGZ5dGZqc25zdmF5emx5b3hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUxNjE2MDksImV4cCI6MjA1MDczNzYwOX0.Bv_vR7H1C3qPjD_XF-y1U-xP-kE-y1U-xP-kE-y1U-xP-kE'; 
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -12,43 +13,47 @@ const PaymentControlService = {
       const { data: { text } } = await worker.recognize(file);
       await worker.terminate();
 
+      // Limpeza geral do texto
       const cleanText = text.toUpperCase().replace(/\n/g, ' ').replace(/\s+/g, ' ');
 
-      // 1. Busca o ID (32 caracteres)
+      // 1. VALIDAÇÃO DE ID (Regex de 32 caracteres)
       const idPattern = /[A-Z0-9]{32}/;
       const idMatch = cleanText.match(idPattern);
       
-      if (!idMatch) return { valido: false, motivo: '❌ ID não encontrado.' };
-      
-      // 2. Valida Valor
-      if (!cleanText.includes("10,00") && !cleanText.includes("10.00")) {
+      if (!idMatch) {
+        return { valido: false, motivo: '❌ ID não encontrado no comprovante.' };
+      }
+
+      // 2. VALIDAÇÃO DE VALOR
+      if (!cleanText.includes("10,00") && !cleanText.includes("10.00") && !cleanText.includes("1000")) {
         return { valido: false, motivo: '❌ Valor de R$ 10,00 não detectado.' };
       }
 
-      const idFinal = idMatch[0];
+      // --- CORREÇÃO AQUI: Limpeza rigorosa do ID ---
+      // .replace(/[^A-Z0-9]/g, '') remove qualquer coisa que não seja letra ou número
+      const idFinal = idMatch[0].trim().replace(/[^A-Z0-9]/g, '');
 
-      // 3. Tenta gravar na tabela 'ids' no campo 'dado'
-      // O Supabase vai negar se o ID já existir (Regra de Unique Key)
+      // 3. GRAVAÇÃO NA TABELA "ids" NO CAMPO "dado"
       const { error } = await supabase
         .from('ids') 
-        .insert([{ dado: idFinal }]);
+        .insert([{ 
+          dado: idFinal 
+        }]);
 
       if (error) {
-        // Se o erro for de duplicidade (ID já registrado)
-        if (error.code === '23505' || error.message.includes('unique')) {
-          return { 
-            valido: false, 
-            motivo: '❌ Comprovante já utilizado. Por favor, realize um novo pagamento.' 
-          };
+        // Erro 23505 significa que o ID já existe no banco (duplicado)
+        if (error.code === '23505') {
+          return { valido: false, motivo: '❌ Este comprovante já foi utilizado.' };
         }
-        return { valido: false, motivo: '❌ Erro ao validar no banco.' };
+        console.error("Erro Supabase:", error.message);
+        return { valido: false, motivo: '❌ Erro ao gravar no banco.' };
       }
 
-      // Se chegou aqui, o ID é novo, foi gravado e as cartas serão liberadas
       return { valido: true, id: idFinal };
 
     } catch (err) {
-      return { valido: false, motivo: '❌ Falha ao processar arquivo.' };
+      console.error("Erro Geral:", err);
+      return { valido: false, motivo: '❌ Falha no processamento.' };
     }
   }
 };
