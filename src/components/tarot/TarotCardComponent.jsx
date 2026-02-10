@@ -1,53 +1,9 @@
 import "./TarotCard.css";
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
 
-export default function TarotCardComponent({ 
-  card, 
-  reversed = false, 
-  revealed = false, 
-  onReveal, 
-  position,
-  autoReveal = false,
-  index = 0 
-}) {
-  const [isFlipping, setIsFlipping] = useState(false);
-  const [isRevealed, setIsRevealed] = useState(revealed);
-  const [localReversed, setLocalReversed] = useState(reversed);
-
-  useEffect(() => {
-    if (autoReveal && !isRevealed) {
-      const delay = (index || 0) * 1500 + 1000;
-      const timer = setTimeout(() => {
-        handleReveal();
-      }, delay);
-      return () => clearTimeout(timer);
-    }
-  }, [autoReveal, isRevealed, index]);
-
-  useEffect(() => {
-    setLocalReversed(reversed);
-  }, [reversed]);
-
-  const handleReveal = () => {
-    if (!isRevealed) {
-      setIsFlipping(true);
-      setTimeout(() => {
-        setIsRevealed(true);
-        if (onReveal) onReveal();
-        setIsFlipping(false);
-      }, 600);
-    }
-  };
-
-  const handleClick = () => {
-    if (!isRevealed && !autoReveal) {
-      handleReveal();
-    }
-  };
-
-  const cardData = card || { name: 'Carta', number: '?', image: '0', upright: '...', reversed: '...' };
+export default function TarotCardComponent({ card, reversed = false, position, index = 0 }) {
+  const cardData = card || { name: 'Carta', number: '?', upright: '...', reversed: '...' };
 
   return (
     <div className="relative w-full max-w-xs mx-auto">
@@ -63,49 +19,45 @@ export default function TarotCardComponent({
         </div>
       )}
 
-      <div 
-        className={`relative w-48 h-72 mx-auto ${!isRevealed && !autoReveal ? 'cursor-pointer' : ''}`}
-        onClick={handleClick}
-      >
+      <div className="relative w-48 h-72 mx-auto">
         <motion.div
           className="absolute inset-0 w-full h-full"
-          animate={isFlipping ? { rotateY: 90 } : { rotateY: 0 }}
-          transition={{ duration: 0.3 }}
           style={{ transformStyle: 'preserve-3d' }}
         >
-          {!isRevealed ? (
-            <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-purple-800 to-violet-900 rounded-2xl border-4 border-amber-400/50 flex flex-col items-center justify-center p-4">
-              <div className="text-amber-400 text-5xl mb-4">🔮</div>
-              <p className="text-white text-xs uppercase tracking-widest">Tarot Tuma</p>
-            </div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="absolute inset-0 w-full h-full bg-white rounded-2xl border-4 border-amber-600 shadow-2xl overflow-hidden"
-            >
-              {/* IMAGEM DA CARTA AQUI */}
-              <img 
-                src={`/cards/${cardData.image}.jpg`} 
-                alt={cardData.name}
-                className={`w-full h-full object-cover ${localReversed ? 'rotate-180' : ''}`}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-              <div className="absolute bottom-2 left-0 right-0 text-center">
-                <p className="text-white font-bold text-sm drop-shadow-lg">{cardData.name}</p>
+          {/* FRENTE DA CARTA (Lógica 3D) */}
+          <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-amber-50 to-orange-100 rounded-2xl border-4 border-amber-600 shadow-2xl flex flex-col items-center justify-center p-4">
+            
+            {/* Indicador de Invertida */}
+            {reversed && (
+              <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-10">
+                🔄 Invertida
               </div>
-            </motion.div>
-          )}
+            )}
+            
+            {/* Número e Nome */}
+            <div className="text-sm font-bold text-amber-800 absolute top-3 left-3">
+              {cardData.number}
+            </div>
+            
+            <h3 className="text-xl font-bold text-amber-900 mt-6 mb-2 text-center">
+              {cardData.name}
+            </h3>
+            
+            {/* Emoji da Carta (Representando a imagem) */}
+            <div className="text-6xl mb-4">🃏</div>
+            
+            {/* Significado breve */}
+            <div className="absolute bottom-3 left-3 right-3 text-center">
+              <p className="text-xs text-amber-800 font-medium">
+                {reversed ? cardData.reversed : cardData.upright}
+              </p>
+            </div>
+            
+            {/* Rotação se invertida */}
+            <div className={`absolute inset-0 ${reversed ? 'rotate-180' : ''}`} />
+          </div>
         </motion.div>
       </div>
-
-      {isRevealed && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 text-center">
-          <p className="text-purple-300 text-sm italic">
-            {localReversed ? cardData.reversed : cardData.upright}
-          </p>
-        </motion.div>
-      )}
     </div>
   );
 }
