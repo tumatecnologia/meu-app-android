@@ -1,50 +1,48 @@
-import { createWorker } from 'tesseract.js';
-import { createClient } from '@supabase/supabase-js';
+export const validatePixReceipt = (ocrText) => {
+  const cleanText = ocrText.toUpperCase();
+  
+  // 1. VALIDAÇÃO DE ID (Já existente)
+  const idPattern = /[A-Z0-9]{32}/;
+  const idEncontrado = cleanText.match(idPattern);
+  if (!idEncontrado) return { success: false, error: "ID da transação não encontrado." };
 
-// URL E CHAVE OFICIAIS (Ajustadas conforme seu painel e código atual)
-const supabase = createClient(
-  'https://npmdvkgsklkideqoriw.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wbWR2a2dnc2tsa2lkZXFvcml3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzMyMDAsImV4cCI6MjA4NjE0OTIwMH0.y-X0NS-_9BV7RhtSUOteLhaUPnt8Tkf24NlUikR8Ifo'
-);
-
-const PaymentControlService = {
-  processarArquivo: async (file) => {
-    try {
-      const reader = new FileReader();
-      const imagemData = await new Promise((resolve) => {
-        reader.onload = (e) => resolve(e.target.result);
-        reader.readAsDataURL(file);
-      });
-
-      // Inicializa o leitor de imagem (Tesseract)
-      const worker = await createWorker('por');
-      const { data: { text } } = await worker.recognize(imagemData);
-      await worker.terminate();
-
-      // Extrai o ID da transação ou gera um temporário
-      const transactionID = text.toUpperCase().match(/([A-Z0-9]{15,})/)?.[0] || "ID_" + Date.now();
-
-      // GRAVAÇÃO NO BANCO - Tabela 'ids' e Coluna 'contemo'
-      const { error } = await supabase
-        .from('ids')
-        .insert([{ 
-          contemo: `ID: ${transactionID} | DATA: ${new Date().toLocaleString('pt-BR')}` 
-        }]);
-
-      if (error) {
-        console.error("Erro detalhado do Supabase:", error);
-        throw error;
-      }
-
-      alert("✅ SUCESSO! Gravado no seu banco de dados.");
-      return { valido: true, idEncontrado: transactionID };
-
-    } catch (error) {
-      console.error("Erro no processamento:", error);
-      alert("❌ Erro de conexão. Verifique se o site atualizou ou se o Supabase está online.");
-      return { valido: false };
-    }
+  // 2. VALIDAÇÃO DE DATA (Hoje ou Ontem)
+  const hoje = new Date();
+  const ontem = new Date();
+  ontem.setDate(hoje.getDate() - 1);
+  
+  const formatarData = (d) => d.toLocaleDateString('pt-BR');
+  const dataHoje = formatarData(hoje);
+  const dataOntem = formatarData(ontem);
+  
+  if (!cleanText.includes(dataHoje) && !cleanText.includes(dataOntem)) {
+    return { success: false, error: "Data do comprovante inválida ou antiga." };
   }
-};
 
-export default PaymentControlService;
+  // 3. VALIDAÇÃO DE VALOR (R$ 10,00)
+  if (!cleanText.includes("10,00")) {
+    return { success: false, error: "Valor incorreto. A consulta custa R$ 10,00." };
+  }
+
+  // 4. VALIDAÇÃO DE NOME (O NOVO FILTRO)
+  const nomesAutorizados = [
+    "GUSTAVO SANTOS RIBEIRO",
+    "GUSTAVO S RIBEIRO"
+  ];
+
+  const keywordsDestino = ["DESTINO", "DESTINATÁRIO", "FAVORECIDO", "RECEBEDOR", "BENEFICIÁRIO"];
+  
+  // Verifica se algum dos nomes autorizados aparece no texto
+  // Para maior precisão, verificamos se ele aparece após uma das keywords ou no contexto geral do recebedor
+  const nomeValido = nomesAutorizados.some(nome => cleanText.includes(nome));
+
+  if (!nomeValido) {
+    return { success: false, error: "Destinatário do PIX incorreto. Verifique o favorecido." };
+  }
+
+  return { 
+    success: true, 
+    idEncontrado: idEncontrado[0],
+    msg: "Pagamento validado com sucesso!" 
+  };
+};
