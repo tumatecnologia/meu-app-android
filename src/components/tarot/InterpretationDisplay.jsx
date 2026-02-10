@@ -1,4 +1,3 @@
-cat <<EOF > /workspaces/meu-app-android/src/components/tarot/InterpretationDisplay.jsx
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Moon, Sun } from 'lucide-react';
@@ -94,4 +93,3 @@ export default function InterpretationDisplay({ interpretation, cards, theme, pe
     </motion.div>
   );
 }
-EOF
