@@ -51,12 +51,14 @@ const TarotReading = ({ paymentId, theme, userData, onNewReading }) => {
         if (!usedIndexes.has(randomIndex)) {
           usedIndexes.add(randomIndex);
           const card = allCards[randomIndex];
+          const reversed = Math.random() > 0.7;
+          
           selectedCards.push({
             id: card.id,
             card_name: card.name,
             position: selectedCards.length === 0 ? 'Passado' : selectedCards.length === 1 ? 'Presente' : 'Futuro',
-            reversed: Math.random() > 0.7,
-            meaning: card.upright
+            reversed: reversed,
+            meaning: reversed ? card.reversed : card.upright
           });
         }
       }
@@ -69,7 +71,7 @@ const TarotReading = ({ paymentId, theme, userData, onNewReading }) => {
       setLoading(false);
     };
 
-    setTimeout(generateReading, 2000);
+    setTimeout(generateReading, 1500);
   }, [theme]);
 
   if (loading) {
@@ -82,43 +84,83 @@ const TarotReading = ({ paymentId, theme, userData, onNewReading }) => {
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="max-w-4xl mx-auto"
+    >
       <div className="text-center mb-8">
         <div className="inline-block p-3 bg-amber-400/20 rounded-full mb-4">
           <Sparkles className="w-8 h-8 text-amber-400" />
         </div>
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Leitura de 3 Cartas</h2>
-        <div className="flex justify-center gap-3 text-purple-300">
-          <div className="bg-purple-800/40 px-3 py-1 rounded-full text-amber-300">
-            {themeLabels[reading.theme] || reading.theme}
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          Leitura de 3 Cartas
+        </h2>
+        <div className="flex flex-wrap items-center justify-center gap-3 text-purple-300">
+          <div className="flex items-center gap-1 bg-purple-800/40 px-3 py-1 rounded-full">
+            <span className="text-amber-300">🎴</span>
+            <span>{themeLabels[reading.theme] || reading.theme}</span>
+          </div>
+          <div className="flex items-center gap-1 bg-purple-800/40 px-3 py-1 rounded-full">
+            <Calendar className="w-3 h-3" />
+            <span>{reading.date}</span>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {reading.cards.map((card, index) => (
-          <div key={index} className="bg-gradient-to-br from-purple-800/40 to-violet-800/40 rounded-2xl p-6 border border-purple-400/30 text-center">
-            <span className="text-xs font-medium text-amber-300 uppercase tracking-wider">{card.position}</span>
-            <h3 className="text-xl font-bold text-white mt-2 mb-3">{card.card_name}</h3>
-            <p className="text-purple-200 text-sm border-t border-purple-400/30 pt-4">{card.meaning}</p>
-          </div>
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="bg-gradient-to-br from-purple-800/40 to-violet-800/40 backdrop-blur-sm rounded-2xl p-6 border border-purple-400/30"
+          >
+            <div className="text-center">
+              <div className="mb-4">
+                <span className={}>
+                  {card.position}
+                </span>
+              </div>
+              
+              <h3 className="text-xl font-bold text-white mb-3">{card.card_name}</h3>
+              
+              <div className="mb-3">
+                <span className={}>
+                  {card.reversed ? '🔄 Invertida' : '⬆️ Direta'}
+                </span>
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-purple-400/30">
+                <p className="text-purple-200 text-sm">
+                  {card.meaning}
+                </p>
+              </div>
+            </div>
+          </motion.div>
         ))}
       </div>
 
-      {/* AQUI É ONDE A MÁGICA ACONTECE: CHAMANDO O COMPONENTE PREMIUM */}
+      {/* AQUI ESTÁ A LIGAÇÃO CORRETA COM O LAYOUT ANTIGO */}
       <InterpretationDisplay 
-        interpretation="Gerando sua mensagem sagrada..." 
+        interpretation="" // Deixamos vazio para o InterpretationDisplay buscar no tarotData.js
         cards={reading.cards} 
         theme={reading.theme}
         personName={userData?.name}
         birthDate={userData?.birthDate}
       />
 
-      <div className="flex justify-center mt-8">
-        <button onClick={onNewReading} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-violet-600 text-white px-6 py-3 rounded-lg font-medium">
-          <RotateCw className="w-4 h-4" /> Nova Leitura
+      <div className="flex flex-wrap gap-3 justify-center mb-8 mt-12">
+        <button
+          onClick={onNewReading}
+          className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white px-6 py-3 rounded-lg font-medium transition-all"
+        >
+          <RotateCw className="w-4 h-4" />
+          Nova Leitura
         </button>
       </div>
+
     </motion.div>
   );
 };
