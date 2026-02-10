@@ -3,7 +3,19 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 export default function TarotCardComponent({ card, reversed = false, position, index = 0 }) {
-  const cardData = card || { name: 'Carta', number: '?', upright: '...', reversed: '...' };
+  const cardData = card || { id: 'default', name: 'Carta', number: '?', upright: '...', reversed: '...' };
+  
+  // Mapeamento de emojis únicos por carta
+  const cardEmojis = {
+    'o-louco': '🤡', 'o-mago': '🧙‍♂️', 'a-sacerdotisa': '🧕', 'a-imperatriz': '👸',
+    'o-imperador': '🤴', 'o-hierofante': '👨‍⚖️', 'os-enamorados': '👩‍❤️‍👨', 'o-carro': '🏎️',
+    'a-justica': '⚖️', 'o-eremita': '👴', 'a-roda-da-fortuna': '🎡', 'a-forca': '🦁',
+    'o-enforcado': '🧘‍♂️', 'a-morte': '💀', 'a-temperanca': '😇', 'o-diabo': '😈',
+    'a-torre': '🗼', 'a-estrela': '🌟', 'a-lua': '🌙', 'o-sol': '☀️',
+    'o-julgamento': '🎺', 'o-mundo': '🌍'
+  };
+
+  const emoji = cardEmojis[cardData.id] || '🃏';
 
   return (
     <div className="relative w-full max-w-xs mx-auto">
@@ -39,16 +51,16 @@ export default function TarotCardComponent({ card, reversed = false, position, i
               {cardData.number}
             </div>
             
-            <h3 className="text-xl font-bold text-amber-900 mt-6 mb-2 text-center">
+            <h3 className="text-lg font-bold text-amber-900 mt-6 mb-1 text-center">
               {cardData.name}
             </h3>
             
-            {/* Emoji da Carta (Representando a imagem) */}
-            <div className="text-6xl mb-4">🃏</div>
+            {/* EMOJI ÚNICO DA CARTA */}
+            <div className="text-6xl mb-2">{emoji}</div>
             
             {/* Significado breve */}
             <div className="absolute bottom-3 left-3 right-3 text-center">
-              <p className="text-xs text-amber-800 font-medium">
+              <p className="text-xs text-amber-800 font-medium line-clamp-2">
                 {reversed ? cardData.reversed : cardData.upright}
               </p>
             </div>
