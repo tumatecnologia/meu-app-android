@@ -23,7 +23,7 @@ const PaymentControlService = {
 
       const textoLimpo = text.toUpperCase();
 
-      // 1. EXTRAÇÃO DO ID
+      // 1. EXTRAÇÃO DO ID (NÃO MODIFICADO)
       const transactionID = textoLimpo.match(/([A-Z0-9]{15,})/)?.[0];
       
       if (!transactionID) {
@@ -31,7 +31,7 @@ const PaymentControlService = {
         return { valido: false };
       }
 
-      // 2. VERIFICAÇÃO DE DUPLICIDADE
+      // 2. VERIFICAÇÃO DE DUPLICIDADE (NÃO MODIFICADO)
       const checkResponse = await fetch(`${SUPABASE_URL}?dado=ilike.*${transactionID}*`, {
         method: 'GET',
         headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
@@ -42,46 +42,50 @@ const PaymentControlService = {
         return { valido: false };
       }
 
-      // 3. VALIDAÇÃO DE DATA SUPER ROBUSTA (NOVIDADE)
-      const hoje = new Date();
-      const dataFormatada = (data) => data.toLocaleDateString('pt-BR');
-      const d1 = dataFormatada(hoje); // DD/MM/AAAA
-      const d2 = d1.replace(/\//g, '.'); // DD.MM.AAAA
-      const d3 = d1.replace(/\//g, '-'); // DD-MM-AAAA
-      const d4 = d1.slice(0, 5); // DD/MM
-
-      // MAPEAMENTO DE MESES POR EXTENSO
-      const meses = {
-        "JAN": "01", "FEV": "02", "MAR": "03", "ABR": "04", "MAI": "05", "JUN": "06",
-        "JUL": "07", "AGO": "08", "SET": "09", "OUT": "10", "NOV": "11", "DEZ": "12"
-      };
-
-      // Regex para procurar formatos: DD/MM/AAAA, DD.MM.AAAA, DD-MM-AAAA, DD/MM/AA E DD MES AAAA
-      // Tenta achar padrões numéricos ou alfanuméricos de data
-      const regexData = /(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})|(\d{2}\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\s+\d{2,4})/i;
-      const dataMatch = textoLimpo.match(regexData);
-      let dataNoComprovante = dataMatch ? dataMatch[0] : null;
-
-      // CONVERSÃO DE MÊS POR EXTENSO PARA NÚMERO
-      if (dataNoComprovante) {
-        for (const [key, value] of Object.entries(meses)) {
-          if (dataNoComprovante.includes(key)) {
-            dataNoComprovante = dataNoComprovante.replace(new RegExp(key, 'i'), value).replace(/\s+/g, '/');
+      // 3. NOVA REGRA: VALIDAÇÃO DE BENEFICIÁRIO (GUSTAVO) - ESTRITA
+      // Procura palavras de recebimento num raio de até 50 caracteres antes do nome
+      const palavrasRecebimento = ["PARA", "BENEFICIÁRIO", "BENEFICIARIO", "DESTINO", "DESTINATÁRIO", "DESTINATARIO", "RECEBEDOR", "FAVORECIDO"];
+      const variacoesNome = ["GUSTAVO SANTOS RIBEIRO", "GUSTAVO S. RIBEIRO", "GUSTAVO S RIBEIRO"];
+      
+      let nomeValidado = false;
+      
+      for (let nome of variacoesNome) {
+        if (textoLimpo.includes(nome)) {
+          // Encontra a posição do nome
+          const indexNome = textoLimpo.indexOf(nome);
+          // Pega um trecho de texto antes do nome (contexto)
+          const contextoAntes = textoLimpo.substring(Math.max(0, indexNome - 60), indexNome);
+          
+          // Verifica se alguma palavra de recebimento está nesse contexto
+          if (palavrasRecebimento.some(palavra => contextoAntes.includes(palavra))) {
+            nomeValidado = true;
             break;
           }
         }
       }
-
-      // Verifica se a data lida corresponde a alguma variação da data de hoje
-      const dataValida = [d1, d2, d3, d4].some(variacao => dataNoComprovante?.includes(variacao));
-
-      if (!dataValida) {
-        alert(`❌ DATA INVÁLIDA!\n\nComprovante: ${dataNoComprovante || "Não detectada"}\nData atual: ${d1}\n\nO comprovante deve ser de hoje.`);
+      
+      if (!nomeValidado) {
+        alert("❌ DESTINATÁRIO INCORRETO OU NOME NÃO ENCONTRADO!\n\nO comprovante deve mostrar Gustavo Santos Ribeiro como recebedor.");
         return { valido: false };
       }
 
-      // 4. REGISTRO
-      const conteudoParaGravar = `ID: ${transactionID} | DATA_OCR: ${dataNoComprovante} | REGISTRO: ${new Date().toLocaleString('pt-BR')}`;
+      // 4. VALIDAÇÃO DE VALOR
+      const regexValor = /(?:R\$|VALOR|PAGO)?\s?(\d{1,3}(?:\.\d{3})*,\d{2})/i;
+      const valorMatch = textoLimpo.match(regexValor);
+      let valorComprovante = 0;
+
+      if (valorMatch) {
+        valorComprovante = parseFloat(valorMatch[1].replace(/\./g, '').replace(',', '.'));
+      }
+
+      if (valorComprovante < 10.00) {
+        const valorExibicao = valorComprovante > 0 ? `R$ ${valorComprovante.toFixed(2)}` : "Não detectado";
+        alert(`❌ VALOR INSUFICIENTE OU NÃO LIDO!\n\nValor detectado: ${valorExibicao}\nValor mínimo: R$ 10,00`);
+        return { valido: false };
+      }
+
+      // 5. REGISTRO (BANCO DE DADOS - NÃO MODIFICADO)
+      const conteudoParaGravar = `ID: ${transactionID} | VALOR: R$ ${valorComprovante.toFixed(2)} | REGISTRO: ${new Date().toLocaleString('pt-BR')}`;
       
       const response = await fetch(SUPABASE_URL, {
         method: 'POST',
@@ -96,7 +100,7 @@ const PaymentControlService = {
 
       if (!response.ok) throw new Error("Erro ao gravar");
 
-      alert("✅ SUCESSO! ID e Data validados.");
+      alert("✅ SUCESSO! Pagamento validado.");
       return { valido: true, idEncontrado: transactionID };
 
     } catch (error) {

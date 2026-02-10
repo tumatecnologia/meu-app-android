@@ -1,11 +1,29 @@
+cat <<EOF > /workspaces/meu-app-android/src/components/tarot/InterpretationDisplay.jsx
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Moon, Sun } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { tarotDeck } from '../../services/tarotData';
 
 export default function InterpretationDisplay({ interpretation, cards, theme, personName, birthDate }) {
+  
+  // Lógica para buscar a interpretação Premium do nosso arquivo
+  const getPremiumInterpretation = () => {
+    if (cards && cards.length > 0 && theme) {
+      const cardId = cards[0].id; // Pega o ID da primeira carta (ex: 'o-louco')
+      const normalizedTheme = theme.toLowerCase(); // Garante que o tema bata com a chave (ex: 'Amor' -> 'amor')
+      
+      if (tarotDeck[cardId] && tarotDeck[cardId].temas[normalizedTheme]) {
+        return tarotDeck[cardId].temas[normalizedTheme];
+      }
+    }
+    return interpretation; // Fallback para a interpretação original caso não encontre no banco
+  };
+
+  const finalInterpretation = getPremiumInterpretation();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -59,7 +77,7 @@ export default function InterpretationDisplay({ interpretation, cards, theme, pe
             ),
           }}
         >
-          {interpretation}
+          {finalInterpretation}
         </ReactMarkdown>
       </div>
 
@@ -76,3 +94,4 @@ export default function InterpretationDisplay({ interpretation, cards, theme, pe
     </motion.div>
   );
 }
+EOF
