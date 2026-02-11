@@ -1,17 +1,17 @@
 import React from 'react';
 
 export default function TarotCardComponent({ card, reversed = false, position }) {
-  if (!card) return null;
+  // Trava de segurança: se não houver carta, não renderiza nada
+  if (!card || !card.id) return null;
 
   const getImagePath = (cardId) => {
-    // 1. Pegamos o ID (ex: a-justica ou o-mago)
-    // 2. Trocamos os hífens por espaços para bater com seus arquivos
-    let fileName = cardId.replace(/-/g, ' ');
+    // Usa o ?. para evitar o erro de 'undefined' e troca o hífen por espaço
+    let fileName = cardId?.replace(/-/g, ' ') || 'o-louco';
     
-    // 3. Ajuste para o seu arquivo específico "o heremita.jpg"
+    // Correção específica para o seu arquivo com H
     if (cardId === 'o-eremita') fileName = 'o heremita';
     
-    // 4. Retornamos o caminho que o GitHub Pages usa para a pasta public/assets
+    // No GitHub Pages, o caminho relativo sem a barra inicial é mais seguro
     return `assets/cartas/${fileName}.jpg`;
   };
 
@@ -31,7 +31,7 @@ export default function TarotCardComponent({ card, reversed = false, position })
           alt={card.name}
           className={`w-full h-full object-cover ${reversed ? 'rotate-180' : ''}`}
           onError={(e) => {
-            // Se falhar com 'assets/', tenta sem o 'assets/' (direto na raiz)
+            // Se falhar com 'assets/', tenta buscar na raiz (comum em builds do Vite)
             if (!e.target.dataset.tried) {
               e.target.dataset.tried = "true";
               const currentSrc = e.target.src;
