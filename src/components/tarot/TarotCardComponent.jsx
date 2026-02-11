@@ -3,19 +3,18 @@ import React from 'react';
 export default function TarotCardComponent({ card, reversed = false, position }) {
   if (!card) return null;
 
-  const getImagePath = (c) => {
-    let id = c.id || '';
-    
-    // Tratamento especial para as exceções que confirmamos
-    if (id === 'o-eremita') return 'assets/cartas/o heremita.jpg';
-    if (id === 'a-roda-da-fortuna') return 'assets/cartas/a roda da fortuna.jpg';
-    
-    // Para as outras, remove hífens e coloca .jpg
-    let fileName = id.replace(/-/g, ' ');
-    return `assets/cartas/${fileName}.jpg`;
+  const cardId = card.id || '';
+  
+  // Função para tratar o nome do arquivo exatamente como você tem na pasta
+  const getFileName = (id) => {
+    if (id === 'o-eremita') return 'o heremita.jpg';
+    if (id === 'a-roda-da-fortuna') return 'a roda-da-fortuna.jpg';
+    return id.replace(/-/g, ' ') + '.jpg';
   };
 
-  const imagePath = getImagePath(card);
+  const fileName = getFileName(cardId);
+  // Tentativa 1: Caminho relativo padrão
+  const primaryPath = `assets/cartas/${fileName}`;
 
   return (
     <div className="flex flex-col items-center">
@@ -27,13 +26,25 @@ export default function TarotCardComponent({ card, reversed = false, position })
       
       <div className="relative w-48 h-80 rounded-2xl overflow-hidden border-4 border-amber-400 shadow-2xl bg-gray-900">
         <img 
-          src={imagePath} 
+          src={primaryPath} 
           alt={card.name}
           className={`w-full h-full object-cover ${reversed ? 'rotate-180' : ''}`}
           onError={(e) => {
-            if (!e.target.dataset.tried) {
+            const tried = e.target.dataset.tried || "0";
+            
+            if (tried === "0") {
               e.target.dataset.tried = "1";
-              e.target.src = e.target.src.replace('assets/cartas/', 'cartas/');
+              // Tentativa 2: Com barra inicial
+              e.target.src = `/${primaryPath}`;
+            } else if (tried === "1") {
+              e.target.dataset.tried = "2";
+              // Tentativa 3: Direto na pasta cartas (sem assets)
+              e.target.src = `cartas/${fileName}`;
+            } else if (tried === "2") {
+              e.target.dataset.tried = "3";
+              // Tentativa 4: Forçando o caminho completo do GitHub
+              const repoName = window.location.pathname.split('/')[1];
+              e.target.src = `/${repoName}/assets/cartas/${fileName}`;
             }
           }}
         />
