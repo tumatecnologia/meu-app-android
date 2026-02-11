@@ -1,26 +1,28 @@
 import React from 'react';
 
 export default function TarotCardComponent({ card, reversed = false, position }) {
-  // Trava de segurança: se não houver carta, não renderiza nada
-  if (!card || !card.id) return null;
+  // Se não houver card, mostra um espaço vazio com borda para não quebrar o layout
+  if (!card) return <div className="w-48 h-80 border-2 border-dashed border-purple-400 rounded-2xl"></div>;
 
-  const getImagePath = (cardId) => {
-    // Usa o ?. para evitar o erro de 'undefined' e troca o hífen por espaço
-    let fileName = cardId?.replace(/-/g, ' ') || 'o-louco';
+  const getImagePath = (c) => {
+    // Tenta pegar o nome do arquivo: Prioridade para o ID, depois nome manual
+    let name = (c.id || c.name || '').toLowerCase().replace(/-/g, ' ');
     
-    // Correção específica para o seu arquivo com H
-    if (cardId === 'o-eremita') fileName = 'o heremita';
+    // Ajuste específico para o seu arquivo com H
+    if (name.includes('eremita')) name = 'o heremita';
     
-    // No GitHub Pages, o caminho relativo sem a barra inicial é mais seguro
-    return `assets/cartas/${fileName}.jpg`;
+    // Remove qualquer acento residual para o link
+    const cleanName = name.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+    
+    return `assets/cartas/${cleanName}.jpg`;
   };
 
-  const imagePath = getImagePath(card.id);
+  const imagePath = getImagePath(card);
 
   return (
     <div className="flex flex-col items-center">
       {position && (
-        <span className="mb-4 px-6 py-1.5 rounded-full bg-purple-900/50 text-amber-400 text-sm font-bold border border-amber-500/30 uppercase">
+        <span className="mb-4 px-6 py-1.5 rounded-full bg-purple-900/80 text-amber-400 text-sm font-bold border border-amber-500/30 uppercase">
           {position}
         </span>
       )}
@@ -31,17 +33,20 @@ export default function TarotCardComponent({ card, reversed = false, position })
           alt={card.name}
           className={`w-full h-full object-cover ${reversed ? 'rotate-180' : ''}`}
           onError={(e) => {
-            // Se falhar com 'assets/', tenta buscar na raiz (comum em builds do Vite)
+            // Se falhar com assets/, tenta sem. Se falhar de novo, usa um placeholder
             if (!e.target.dataset.tried) {
-              e.target.dataset.tried = "true";
-              const currentSrc = e.target.src;
-              e.target.src = currentSrc.replace('assets/cartas/', 'cartas/');
+              e.target.dataset.tried = "1";
+              e.target.src = e.target.src.replace('assets/cartas/', 'cartas/');
+            } else if (e.target.dataset.tried === "1") {
+               e.target.dataset.tried = "2";
+               // Tenta o nome da carta direto caso esteja na raiz
+               e.target.src = `${card.name.toLowerCase()}.jpg`;
             }
           }}
         />
         
         <div className="absolute bottom-0 left-0 right-0 p-3 text-center bg-black/80">
-           <p className="text-white font-bold text-xs uppercase tracking-widest">{card.name}</p>
+           <p className="text-white font-bold text-[10px] uppercase tracking-tighter">{card.name}</p>
         </div>
       </div>
     </div>
