@@ -1,17 +1,25 @@
 import React from 'react';
 
 export default function TarotCardComponent({ card, reversed = false, position }) {
-  if (!card) return null;
+  // Se não houver card ou id, mostra apenas um espaço reservado elegante
+  if (!card || !card.id) {
+    return (
+      <div className="flex flex-col items-center">
+        {position && <span className="mb-4 text-purple-300 text-sm uppercase opacity-50">{position}</span>}
+        <div className="w-48 h-80 rounded-2xl border-2 border-dashed border-purple-500/30 bg-gray-900/50 animate-pulse" />
+      </div>
+    );
+  }
 
-  // 1. Identifica o arquivo físico com precisão
-  const getImagePath = (c) => {
-    let fileName = c.id.replace(/-/g, ' ');
-    if (c.id === 'o-eremita') fileName = 'o heremita';
-    if (c.id === 'a-roda-da-fortuna') fileName = 'a roda-da-fortuna';
+  const getImagePath = (id) => {
+    // PROTEÇÃO: O replace só roda se o id existir
+    let fileName = id ? id.replace(/-/g, ' ') : 'o louco';
+    if (id === 'o-eremita') fileName = 'o heremita';
+    if (id === 'a-roda-da-fortuna') fileName = 'a roda-da-fortuna';
     return `assets/cartas/${fileName}.jpg`;
   };
 
-  const imagePath = getImagePath(card);
+  const imagePath = getImagePath(card.id);
 
   return (
     <div className="flex flex-col items-center">
@@ -21,11 +29,10 @@ export default function TarotCardComponent({ card, reversed = false, position })
         </span>
       )}
       
-      {/* Moldura Fixa para parar de tremer */}
       <div className="relative w-48 h-80 rounded-2xl overflow-hidden border-4 border-amber-400 shadow-2xl bg-gray-900">
         <img 
           src={imagePath} 
-          alt={card.name}
+          alt={card.name || 'Carta'}
           className={`w-full h-full object-cover ${reversed ? 'rotate-180' : ''}`}
           onError={(e) => {
             if (!e.target.dataset.tried) {
@@ -34,10 +41,8 @@ export default function TarotCardComponent({ card, reversed = false, position })
             }
           }}
         />
-        
-        {/* Nome sólido na parte inferior */}
         <div className="absolute bottom-0 left-0 right-0 p-3 text-center bg-black/70 backdrop-blur-sm">
-           <p className="text-white font-bold text-xs uppercase tracking-widest">{card.name}</p>
+           <p className="text-white font-bold text-[10px] uppercase tracking-tighter">{card.name}</p>
         </div>
       </div>
     </div>
