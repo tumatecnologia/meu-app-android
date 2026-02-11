@@ -3,18 +3,12 @@ import React from 'react';
 export default function TarotCardComponent({ card, reversed = false, position }) {
   if (!card) return null;
 
+  // 1. Identifica o arquivo físico com precisão
   const getImagePath = (c) => {
-    // Tenta o ID, se não tiver, tenta o nome, se não tiver, usa 'o-louco'
-    let baseName = (c.id || c.name || 'o-louco').toLowerCase().replace(/-/g, ' ');
-    
-    // Ajustes manuais para bater com seus arquivos
-    if (baseName.includes('eremita')) baseName = 'o heremita';
-    if (baseName.includes('roda-da-fortuna')) baseName = 'a roda-da-fortuna';
-    
-    // Remove acentos apenas para garantir
-    const cleanName = baseName.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
-    
-    return `assets/cartas/${cleanName}.jpg`;
+    let fileName = c.id.replace(/-/g, ' ');
+    if (c.id === 'o-eremita') fileName = 'o heremita';
+    if (c.id === 'a-roda-da-fortuna') fileName = 'a roda-da-fortuna';
+    return `assets/cartas/${fileName}.jpg`;
   };
 
   const imagePath = getImagePath(card);
@@ -27,6 +21,7 @@ export default function TarotCardComponent({ card, reversed = false, position })
         </span>
       )}
       
+      {/* Moldura Fixa para parar de tremer */}
       <div className="relative w-48 h-80 rounded-2xl overflow-hidden border-4 border-amber-400 shadow-2xl bg-gray-900">
         <img 
           src={imagePath} 
@@ -35,13 +30,14 @@ export default function TarotCardComponent({ card, reversed = false, position })
           onError={(e) => {
             if (!e.target.dataset.tried) {
               e.target.dataset.tried = "true";
-              // Se falhar assets/cartas/, tenta direto na raiz cartas/
               e.target.src = e.target.src.replace('assets/cartas/', 'cartas/');
             }
           }}
         />
-        <div className="absolute bottom-0 left-0 right-0 p-3 text-center bg-black/80">
-           <p className="text-white font-bold text-[10px] uppercase tracking-tighter">{card.name}</p>
+        
+        {/* Nome sólido na parte inferior */}
+        <div className="absolute bottom-0 left-0 right-0 p-3 text-center bg-black/70 backdrop-blur-sm">
+           <p className="text-white font-bold text-xs uppercase tracking-widest">{card.name}</p>
         </div>
       </div>
     </div>
