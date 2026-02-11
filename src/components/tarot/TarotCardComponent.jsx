@@ -3,17 +3,21 @@ import React from 'react';
 export default function TarotCardComponent({ card, reversed = false, position }) {
   if (!card) return null;
 
-  const getImagePath = (id) => {
-    // 1. Identifica o nome do arquivo exatamente como você listou
-    let fileName = id.replace(/-/g, ' ');
-    if (id === 'o-eremita') fileName = 'o heremita';
-    if (id === 'a-roda-da-fortuna') fileName = 'a roda-da-fortuna'; // Mantendo o hífen como estava no seu ls
+  const getImagePath = (c) => {
+    // Tenta o ID, se não tiver, tenta o nome, se não tiver, usa 'o-louco'
+    let baseName = (c.id || c.name || 'o-louco').toLowerCase().replace(/-/g, ' ');
     
-    // 2. No Vite + GitHub Pages, arquivos em public/assets devem ser acessados assim:
-    return `./assets/cartas/${fileName}.jpg`;
+    // Ajustes manuais para bater com seus arquivos
+    if (baseName.includes('eremita')) baseName = 'o heremita';
+    if (baseName.includes('roda-da-fortuna')) baseName = 'a roda-da-fortuna';
+    
+    // Remove acentos apenas para garantir
+    const cleanName = baseName.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+    
+    return `assets/cartas/${cleanName}.jpg`;
   };
 
-  const imagePath = getImagePath(card.id || '');
+  const imagePath = getImagePath(card);
 
   return (
     <div className="flex flex-col items-center">
@@ -29,16 +33,10 @@ export default function TarotCardComponent({ card, reversed = false, position })
           alt={card.name}
           className={`w-full h-full object-cover ${reversed ? 'rotate-180' : ''}`}
           onError={(e) => {
-            // Se falhar o ./assets/, tenta direto na raiz /assets/
             if (!e.target.dataset.tried) {
               e.target.dataset.tried = "true";
-              const currentSrc = e.target.src;
-              if (currentSrc.includes('./assets/')) {
-                e.target.src = currentSrc.replace('./assets/', 'assets/');
-              } else {
-                // Última tentativa: tenta sem o prefixo assets
-                e.target.src = `assets/cartas/${card.id.replace(/-/g, ' ')}.jpg`;
-              }
+              // Se falhar assets/cartas/, tenta direto na raiz cartas/
+              e.target.src = e.target.src.replace('assets/cartas/', 'cartas/');
             }
           }}
         />
