@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { RotateCw } from 'lucide-react';
 import InterpretationDisplay from './InterpretationDisplay';
 import TarotCardComponent from './TarotCardComponent';
@@ -10,7 +9,6 @@ const TarotReading = ({ theme, userData, onNewReading }) => {
 
   useEffect(() => {
     const generateReading = () => {
-      // IDs EXATOS para bater com o tarotData.js
       const allCards = [
         { id: 'o-louco', name: 'O Louco', number: '0' },
         { id: 'o-mago', name: 'O Mago', number: 'I' },
@@ -36,53 +34,51 @@ const TarotReading = ({ theme, userData, onNewReading }) => {
         { id: 'o-mundo', name: 'O Mundo', number: 'XXI' }
       ];
 
-      const selectedCards = [];
+      const selected = [];
       const used = new Set();
-      while (selectedCards.length < 3) {
+      while (selected.length < 3) {
         const idx = Math.floor(Math.random() * allCards.length);
         if (!used.has(idx)) {
           used.add(idx);
-          selectedCards.push({
+          selected.push({
             ...allCards[idx],
-            position: selectedCards.length === 0 ? 'Passado' : selectedCards.length === 1 ? 'Presente' : 'Futuro',
+            position: selected.length === 0 ? 'Passado' : selected.length === 1 ? 'Presente' : 'Futuro',
             reversed: Math.random() > 0.7
           });
         }
       }
-      setReading({ cards: selectedCards, theme });
+      setReading({ cards: selected, theme });
       setLoading(false);
     };
     setTimeout(generateReading, 1000);
   }, [theme]);
 
-  if (loading) return <div className="text-center py-20 text-white font-bold">Embaralhando...</div>;
+  if (loading) return <div className="text-center py-20 text-white font-bold text-xl">Invocando os Arcanos...</div>;
 
   return (
-    <div className="max-w-6xl mx-auto px-4">
-      {/* GRID FORÇADO: 3 colunas no PC, 1 no Celular */}
-      <div className="flex flex-col md:flex-row justify-center items-start gap-8 mb-12">
+    <div className="max-w-6xl mx-auto px-4 pb-20">
+      <div className="flex flex-wrap justify-center items-start gap-6 md:gap-12 mb-16">
         {reading.cards.map((card, index) => (
-          <div key={index} className="w-full md:w-1/3">
+          <div key={index} className="w-full sm:w-64">
             <TarotCardComponent 
               card={card} 
               position={card.position} 
-              reversed={card.reversed} 
-              autoReveal={true}
-              index={index}
+              reversed={card.reversed}
             />
           </div>
         ))}
       </div>
 
+      {/* PASSANDO A LISTA COMPLETA DE CARTAS COM ID */}
       <InterpretationDisplay 
         cards={reading.cards} 
         theme={reading.theme}
         personName={userData?.name}
       />
 
-      <div className="text-center mt-12 mb-10">
-        <button onClick={onNewReading} className="bg-amber-500 text-purple-900 font-bold py-3 px-8 rounded-full flex items-center gap-2 mx-auto hover:bg-amber-400 transition-colors shadow-lg">
-          <RotateCw size={20} /> Nova Consulta
+      <div className="text-center mt-12">
+        <button onClick={onNewReading} className="bg-amber-500 text-purple-900 font-bold py-4 px-10 rounded-full hover:bg-amber-400 transition-all shadow-xl active:scale-95">
+          <RotateCw className="inline-block mr-2" size={20} /> Nova Consulta
         </button>
       </div>
     </div>
