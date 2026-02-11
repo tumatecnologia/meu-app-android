@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 export default function TarotCardComponent({ card, reversed = false, position }) {
   if (!card) return null;
 
-  // Mapeamento dos nomes dos arquivos exatamente como estão na sua pasta assets/cartas
   const imageMap = {
     'o-louco': 'o louco.jpg',
     'o-mago': 'o mago.jpg',
@@ -15,7 +14,7 @@ export default function TarotCardComponent({ card, reversed = false, position })
     'os-enamorados': 'os enamorados.jpg',
     'o-carro': 'o carro.jpg',
     'a-justica': 'a justica.jpg',
-    'o-eremita': 'o heremita.jpg', // Ajustado para 'heremita' com H conforme seu ls
+    'o-eremita': 'o heremita.jpg',
     'a-roda-da-fortuna': 'a roda-da-fortuna.jpg',
     'a-forca': 'a forca.jpg',
     'o-enforcado': 'o enforcado.jpg',
@@ -30,8 +29,11 @@ export default function TarotCardComponent({ card, reversed = false, position })
     'o-mundo': 'o mundo.jpg'
   };
 
-  const imageName = imageMap[card.id];
+  const imageName = imageMap[card.id] || 'o louco.jpg';
   const imagePath = `/assets/cartas/${imageName}`;
+  
+  // Isso vai nos ajudar a saber onde ele está procurando
+  console.log("Tentando carregar imagem:", imagePath);
 
   return (
     <div className="flex flex-col items-center">
@@ -41,36 +43,21 @@ export default function TarotCardComponent({ card, reversed = false, position })
         </span>
       )}
       
-      <motion.div 
-        whileHover={{ scale: 1.05 }}
-        className="relative group"
-      >
-        <div className="relative w-48 h-80 rounded-2xl overflow-hidden border-4 border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.3)] bg-gray-900">
-          <img 
-            src={imagePath} 
-            alt={card.name}
-            className={`w-full h-full object-cover transition-transform duration-700 ${reversed ? 'rotate-180' : ''}`}
-            onError={(e) => {
-                e.target.src = "https://via.placeholder.com/200x350?text=Carta+Nao+Encontrada";
-                console.error("Erro ao carregar imagem:", imagePath);
-            }}
-          />
-          
-          {/* Overlay de brilho */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60"></div>
-          
-          {/* Nome da carta na parte inferior da imagem */}
-          <div className="absolute bottom-0 left-0 right-0 p-3 text-center bg-black/40 backdrop-blur-sm">
-             <p className="text-white font-bold text-sm uppercase">{card.name}</p>
-          </div>
+      <div className="relative w-48 h-80 rounded-2xl overflow-hidden border-4 border-amber-400 shadow-2xl bg-gray-900">
+        <img 
+          src={imagePath} 
+          alt={card.name}
+          className={`w-full h-full object-cover ${reversed ? 'rotate-180' : ''}`}
+          onError={(e) => {
+            console.error("Erro ao carregar imagem:", imagePath);
+            e.target.src = "https://via.placeholder.com/200x350?text=Erro+Imagem";
+          }}
+        />
+        
+        <div className="absolute bottom-0 left-0 right-0 p-3 text-center bg-black/60 backdrop-blur-sm">
+           <p className="text-white font-bold text-xs uppercase">{card.name}</p>
         </div>
-
-        {reversed && (
-          <div className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg z-20">
-            INVERTIDA
-          </div>
-        )}
-      </motion.div>
+      </div>
     </div>
   );
 }
