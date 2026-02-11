@@ -1,20 +1,18 @@
 import React from 'react';
 
 export default function TarotCardComponent({ card, reversed = false, position }) {
-  // Se não houver card, mostra um espaço vazio com borda para não quebrar o layout
-  if (!card) return <div className="w-48 h-80 border-2 border-dashed border-purple-400 rounded-2xl"></div>;
+  if (!card) return null;
 
   const getImagePath = (c) => {
-    // Tenta pegar o nome do arquivo: Prioridade para o ID, depois nome manual
-    let name = (c.id || c.name || '').toLowerCase().replace(/-/g, ' ');
+    let id = c.id || '';
     
-    // Ajuste específico para o seu arquivo com H
-    if (name.includes('eremita')) name = 'o heremita';
+    // Tratamento especial para as exceções que confirmamos
+    if (id === 'o-eremita') return 'assets/cartas/o heremita.jpg';
+    if (id === 'a-roda-da-fortuna') return 'assets/cartas/a roda da fortuna.jpg';
     
-    // Remove qualquer acento residual para o link
-    const cleanName = name.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
-    
-    return `assets/cartas/${cleanName}.jpg`;
+    // Para as outras, remove hífens e coloca .jpg
+    let fileName = id.replace(/-/g, ' ');
+    return `assets/cartas/${fileName}.jpg`;
   };
 
   const imagePath = getImagePath(card);
@@ -33,18 +31,12 @@ export default function TarotCardComponent({ card, reversed = false, position })
           alt={card.name}
           className={`w-full h-full object-cover ${reversed ? 'rotate-180' : ''}`}
           onError={(e) => {
-            // Se falhar com assets/, tenta sem. Se falhar de novo, usa um placeholder
             if (!e.target.dataset.tried) {
               e.target.dataset.tried = "1";
               e.target.src = e.target.src.replace('assets/cartas/', 'cartas/');
-            } else if (e.target.dataset.tried === "1") {
-               e.target.dataset.tried = "2";
-               // Tenta o nome da carta direto caso esteja na raiz
-               e.target.src = `${card.name.toLowerCase()}.jpg`;
             }
           }}
         />
-        
         <div className="absolute bottom-0 left-0 right-0 p-3 text-center bg-black/80">
            <p className="text-white font-bold text-[10px] uppercase tracking-tighter">{card.name}</p>
         </div>
