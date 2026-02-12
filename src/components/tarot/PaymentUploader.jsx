@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import PaymentControlService from '../../services/paymentControl.js';
+import PaymentControlService from '../../services/paymentControl.jsx';
 
 const PaymentUploader = ({ onValidationComplete, onCancel }) => {
   const [processando, setProcessando] = useState(false);
