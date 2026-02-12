@@ -57,7 +57,7 @@ const tarotCards = Object.keys(tarotCardsFileMap);
 
 const getCardImagePath = (cardName) => {
   const fileName = tarotCardsFileMap[cardName];
-  // TENTATIVA 3: Usando o caminho a partir da raiz do servidor para o Vite
+  // TENTATIVA 4: Usando o caminho a partir da raiz do servidor para o Vite
   return `/assets/cartas/${fileName}.jpg`;
 };
 
