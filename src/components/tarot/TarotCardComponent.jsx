@@ -8,8 +8,7 @@ export default function TarotCardComponent({ card, reversed = false, position })
                            .normalize('NFD')
                            .replace(/[\u0300-\u036f]/g, "");
   
-  // 2. Caminho baseado na sua estrutura real: /public/assets/cartas/
-  // No navegador, a pasta 'public' é a raiz (/), então o caminho é:
+  // 2. Caminho baseado na pasta public (deve funcionar)
   const finalImage = `/assets/cartas/${fileName}.jpg`;
 
   return (
@@ -26,8 +25,11 @@ export default function TarotCardComponent({ card, reversed = false, position })
           alt={cardName}
           className={`w-full h-full object-cover ${reversed ? 'rotate-180' : ''}`}
           onError={(e) => {
-            console.error("❌ Erro fatal no caminho:", e.target.src);
+            // Logs detalhados para o console se falhar
+            console.error("❌ Imagem não encontrada:", e.target.src);
+            console.log("📂 Procurando em: public/assets/cartas/" + fileName + ".jpg");
           }}
+          onLoad={() => console.log("✅ Imagem carregada:", finalImage)}
         />
         
         <div className="absolute bottom-0 left-0 right-0 p-3 text-center bg-black/80 backdrop-blur-sm border-t border-amber-400/30">
