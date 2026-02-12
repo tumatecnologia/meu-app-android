@@ -14,7 +14,6 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wbWR2a2dnc2tsa2lkZXFvcml3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzMyMDAsImV4cCI6MjA4NjE0OTIwMH0.y-X0NS-_9BV7RhtSUOteLhaUPnt8Tkf24NlUikR8Ifo'
 );
 
-// Mapeamento exato dos arquivos da pasta public/assets/cartas
 const tarotCardsFileMap = {
   'O Louco': 'o louco',
   'O Mago': 'o mago',
@@ -57,7 +56,6 @@ const tarotCards = Object.keys(tarotCardsFileMap);
 
 const getCardImagePath = (cardName) => {
   const fileName = tarotCardsFileMap[cardName];
-  // TENTATIVA 4: Usando o caminho a partir da raiz do servidor para o Vite
   return `/assets/cartas/${fileName}.jpg`;
 };
 
