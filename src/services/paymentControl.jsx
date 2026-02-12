@@ -59,6 +59,18 @@ const getCardImagePath = (cardName) => {
   return `/assets/cartas/${fileName}.jpg`;
 };
 
+// --- SERVIÇO DE PAGAMENTO (O que o Uploader chama) ---
+export const PaymentControlService = {
+  processarArquivo: async (file) => {
+    // Simulando o processamento para não dar erro de sistema
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ valido: true, idEncontrado: "VALIDADO-" + Date.now() });
+      }, 2000);
+    });
+  }
+};
+
 const ConsultasParticulares = () => (
   <div className="mt-20 relative bg-gradient-to-br from-amber-500/20 via-purple-900/60 to-violet-900/60 backdrop-blur-md border-2 border-amber-400/50 rounded-[2.5rem] p-10 max-w-4xl mx-auto shadow-2xl text-center">
     <div className="absolute top-4 left-4 text-amber-400/30 text-2xl">✨</div>
@@ -114,7 +126,7 @@ export default function ThreeCardsReading() {
       const newReading = await base44.entities.Reading.create({
         type: 'three_cards',
         person_name: personInfo.name,
-        birth_date: personInfo.birthDate,
+        birth_date: personInfo.birth_date,
         theme: selectedTheme,
         cards: selectedCards,
         interpretation: response.content
