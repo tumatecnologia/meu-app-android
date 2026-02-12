@@ -15,31 +15,6 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabase = createClient('https://npmdvkggsklkideqoriw.supabase.co', SUPABASE_KEY);
 
-const tarotCardsFileMap = {
-  'O Louco': 'o louco',
-  'O Mago': 'o mago',
-  'A Sacerdotisa': 'a sacerdotisa',
-  'A Imperatriz': 'a imperatriz',
-  'O Imperador': 'o imperador',
-  'O Hierofante': 'o hierofante',
-  'Os Enamorados': 'os enamorados',
-  'O Carro': 'o carro',
-  'A Força': 'a forca',
-  'O Eremita': 'o heremita',
-  'A Roda da Fortuna': 'a roda da fortuna',
-  'A Justiça': 'a justica',
-  'O Enforcado': 'o enforcado',
-  'A Morte': 'a morte',
-  'A Temperança': 'a temperanca',
-  'O Diabo': 'o diabo',
-  'A Torre': 'a torre',
-  'A Estrela': 'a estrela',
-  'A Lua': 'a lua',
-  'O Sol': 'o sol',
-  'O Julgamento': 'o julgamento',
-  'O Mundo': 'o mundo'
-};
-
 const themes = [
   { id: 'amor', label: 'Amor', icon: Heart, color: 'from-pink-500 to-rose-500' },
   { id: 'sexo', label: 'Sexo', icon: Flame, color: 'from-red-500 to-orange-500' },
@@ -53,13 +28,11 @@ const themes = [
   { id: 'conselho', label: 'Conselho', icon: Lightbulb, color: 'from-amber-500 to-yellow-500' }
 ];
 
-const tarotCards = Object.keys(tarotCardsFileMap);
+const tarotCards = ['O Louco', 'O Mago', 'A Sacerdotisa', 'A Imperatriz', 'O Imperador', 'O Hierofante', 'Os Enamorados', 'O Carro', 'A Força', 'O Eremita', 'A Roda da Fortuna', 'A Justiça', 'O Enforcado', 'A Morte', 'A Temperança', 'O Diabo', 'A Torre', 'A Estrela', 'A Lua', 'O Sol', 'O Julgamento', 'O Mundo'];
 
-const getCardImagePath = (cardName) => {
-  const fileName = tarotCardsFileMap[cardName];
-  return `/assets/cartas/${fileName}.jpg`;
-};
-
+// =========================================================
+// SERVIÇO DE PAGAMENTO (VALORIZAÇÃO MÁXIMA - NÃO MEXER)
+// =========================================================
 export const PaymentControlService = {
   processarArquivo: async (file) => {
     try {
@@ -235,7 +208,7 @@ export default function ThreeCardsReading() {
           <div className="space-y-12">
             <div className="flex flex-wrap justify-center gap-8">
               {reading.cards.map((c, i) => (
-                <TarotCardComponent key={i} card={{ name: c.card_name, image: getCardImagePath(c.card_name) }} reversed={c.reversed} revealed={revealedCards[i]} onReveal={() => {}} position={c.position} autoReveal={true} />
+                <TarotCardComponent key={i} card={{ name: c.card_name }} reversed={c.reversed} revealed={revealedCards[i]} onReveal={() => {}} position={c.position} autoReveal={true} />
               ))}
             </div>
             {revealedCards.every(r => r) && (
