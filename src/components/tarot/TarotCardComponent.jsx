@@ -1,21 +1,15 @@
 import React from 'react';
 
 export default function TarotCardComponent({ card, reversed = false, position }) {
-  // Se não houver card ou id, mostra um placeholder para evitar o erro "l.id is undefined"
-  if (!card || !card.id) {
-    return (
-      <div className="flex flex-col items-center">
-        {position && <span className="mb-4 text-purple-300 text-sm uppercase opacity-50">{position}</span>}
-        <div className="w-48 h-80 rounded-2xl border-2 border-dashed border-purple-500/30 bg-gray-900/50 animate-pulse" />
-      </div>
-    );
-  }
+  if (!card || !card.id) return null;
 
   const getImagePath = (id) => {
-    // Só executa o replace se o id existir (evita o erro fatal)
+    // 1. Identifica o nome do arquivo exatamente como você listou
     let fileName = id.replace(/-/g, ' ');
     if (id === 'o-eremita') fileName = 'o heremita';
     if (id === 'a-roda-da-fortuna') fileName = 'a roda-da-fortuna';
+    
+    // 2. Caminho relativo simples - costuma funcionar melhor no GH Pages
     return `assets/cartas/${fileName}.jpg`;
   };
 
@@ -35,9 +29,11 @@ export default function TarotCardComponent({ card, reversed = false, position })
           alt={card.name}
           className={`w-full h-full object-cover ${reversed ? 'rotate-180' : ''}`}
           onError={(e) => {
+            // Se falhar, tenta sem o 'assets/'
             if (!e.target.dataset.tried) {
               e.target.dataset.tried = "true";
-              e.target.src = e.target.src.replace('assets/cartas/', 'cartas/');
+              const currentSrc = e.target.src;
+              e.target.src = currentSrc.replace('assets/cartas/', 'cartas/');
             }
           }}
         />
