@@ -25,7 +25,7 @@ const tarotCardsFileMap = {
   'Os Enamorados': 'os enamorados',
   'O Carro': 'o carro',
   'A Força': 'a forca',
-  'O Eremita': 'o heremita', // Arquivo possui 'h'
+  'O Eremita': 'o heremita', // Arquivo possui 'h' minúsculo
   'A Roda da Fortuna': 'a roda da fortuna',
   'A Justiça': 'a justica',
   'O Enforcado': 'o enforcado',
@@ -57,7 +57,8 @@ const tarotCards = Object.keys(tarotCardsFileMap);
 
 const getCardImagePath = (cardName) => {
   const fileName = tarotCardsFileMap[cardName];
-  return `/assets/cartas/${fileName}.jpg`;
+  // Correção aplicada: removida a barra inicial para compatibilidade com o deploy do Vite
+  return `assets/cartas/${fileName}.jpg`;
 };
 
 const ConsultasParticulares = () => (
@@ -176,7 +177,7 @@ export default function ThreeCardsReading() {
                   key={i} 
                   card={{ 
                     name: c.card_name,
-                    image: getCardImagePath(c.card_name) // Caminho da imagem adicionado aqui
+                    image: getCardImagePath(c.card_name) 
                   }} 
                   reversed={c.reversed} 
                   revealed={revealedCards[i]} 
