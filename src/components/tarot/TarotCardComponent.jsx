@@ -3,13 +3,15 @@ import React from 'react';
 export default function TarotCardComponent({ card, reversed = false, position }) {
   const cardName = card?.name || card?.card_name || "";
   
-  // 1. Tratamento do nome (minúsculas e sem acentos)
   const fileName = cardName.toLowerCase()
                            .normalize('NFD')
                            .replace(/[\u0300-\u036f]/g, "");
   
-  // 2. Caminho baseado na pasta public (deve funcionar)
-  const finalImage = `/assets/cartas/${fileName}.jpg`;
+  // Detecta se estamos no GitHub Pages e ajusta o caminho base
+  const isGitHubPages = window.location.hostname.includes('github.io');
+  const basePath = isGitHubPages ? '/meu-app-android' : '';
+  
+  const finalImage = `${basePath}/assets/cartas/${fileName}.jpg`;
 
   return (
     <div className="flex flex-col items-center">
@@ -25,11 +27,8 @@ export default function TarotCardComponent({ card, reversed = false, position })
           alt={cardName}
           className={`w-full h-full object-cover ${reversed ? 'rotate-180' : ''}`}
           onError={(e) => {
-            // Logs detalhados para o console se falhar
-            console.error("❌ Imagem não encontrada:", e.target.src);
-            console.log("📂 Procurando em: public/assets/cartas/" + fileName + ".jpg");
+            console.error("❌ Erro ao carregar imagem no caminho:", e.target.src);
           }}
-          onLoad={() => console.log("✅ Imagem carregada:", finalImage)}
         />
         
         <div className="absolute bottom-0 left-0 right-0 p-3 text-center bg-black/80 backdrop-blur-sm border-t border-amber-400/30">
