@@ -25,7 +25,7 @@ const tarotCardsFileMap = {
   'Os Enamorados': 'os enamorados',
   'O Carro': 'o carro',
   'A Força': 'a forca',
-  'O Eremita': 'o heremita', // Arquivo possui 'h' minúsculo
+  'O Eremita': 'o heremita',
   'A Roda da Fortuna': 'a roda da fortuna',
   'A Justiça': 'a justica',
   'O Enforcado': 'o enforcado',
@@ -57,8 +57,8 @@ const tarotCards = Object.keys(tarotCardsFileMap);
 
 const getCardImagePath = (cardName) => {
   const fileName = tarotCardsFileMap[cardName];
-  // Correção aplicada: removida a barra inicial para compatibilidade com o deploy do Vite
-  return `assets/cartas/${fileName}.jpg`;
+  // TENTATIVA 3: Usando o caminho a partir da raiz do servidor para o Vite
+  return `/assets/cartas/${fileName}.jpg`;
 };
 
 const ConsultasParticulares = () => (
