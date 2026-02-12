@@ -3,13 +3,14 @@ import React from 'react';
 export default function TarotCardComponent({ card, reversed = false, position }) {
   const cardName = card?.name || card?.card_name || "";
   
-  // Transformação para minúsculas e sem acentos
+  // 1. Tratamento do nome (minúsculas e sem acentos)
   const fileName = cardName.toLowerCase()
                            .normalize('NFD')
                            .replace(/[\u0300-\u036f]/g, "");
   
-  // TESTE: Tentando dois caminhos possíveis (com e sem a barra inicial)
-  const finalImage = `assets/cartas/${fileName}.jpg`;
+  // 2. Caminho baseado na sua estrutura real: /public/assets/cartas/
+  // No navegador, a pasta 'public' é a raiz (/), então o caminho é:
+  const finalImage = `/assets/cartas/${fileName}.jpg`;
 
   return (
     <div className="flex flex-col items-center">
@@ -21,17 +22,11 @@ export default function TarotCardComponent({ card, reversed = false, position })
       
       <div className="relative w-48 h-80 rounded-2xl overflow-hidden border-4 border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.4)] bg-gray-900">
         <img 
-          src={window.location.origin + "/assets/cartas/" + fileName + ".jpg"} 
+          src={finalImage} 
           alt={cardName}
           className={`w-full h-full object-cover ${reversed ? 'rotate-180' : ''}`}
-          onLoad={() => console.log("✅ Imagem carregada: " + fileName)}
           onError={(e) => {
-            console.error("❌ Erro ao carregar: " + e.target.src);
-            // Tenta caminho alternativo sem a pasta assets se falhar
-            if(!e.target.dataset.retried) {
-               e.target.dataset.retried = true;
-               e.target.src = "/cartas/" + fileName + ".jpg";
-            }
+            console.error("❌ Erro fatal no caminho:", e.target.src);
           }}
         />
         
