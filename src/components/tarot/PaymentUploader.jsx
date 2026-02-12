@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import PaymentControlService from '../../services/paymentControl.jsx';
+// Mudança aqui: Importando o serviço como um membro nomeado {}
+import { PaymentControlService } from '../../services/paymentControl.jsx';
 
 const PaymentUploader = ({ onValidationComplete, onCancel }) => {
   const [processando, setProcessando] = useState(false);
@@ -21,17 +22,18 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
     setResultado(null);
 
     try {
+      // Agora o PaymentControlService será reconhecido corretamente
       const res = await PaymentControlService.processarArquivo(file);
       setResultado(res);
       setProcessando(false);
 
       if (res.valido) {
-        // AQUI ESTÁ A CHAVE: Chamando a função que o Modal espera
         if (onValidationComplete) {
           onValidationComplete(res);
         }
       }
     } catch (error) {
+      console.error("Erro no upload:", error);
       setProcessando(false);
       setResultado({ valido: false, motivo: 'Erro no sistema' });
     }
@@ -39,12 +41,25 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
 
   return (
     <div className="w-full max-w-xs mx-auto p-2">
-      <input ref={fileInputRef} type="file" accept="image/*,.pdf" capture="environment" onChange={handleFileSelect} className="hidden" disabled={processando} />
+      <input 
+        ref={fileInputRef} 
+        type="file" 
+        accept="image/*,.pdf" 
+        capture="environment" 
+        onChange={handleFileSelect} 
+        className="hidden" 
+        disabled={processando} 
+      />
       
       <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-4 shadow-md text-center">
         <h2 className="text-lg font-bold text-white mb-4">📱 Enviar Comprovante</h2>
         
-        <div onClick={() => !processando && fileInputRef.current?.click()} className={`p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all ${processando ? 'border-amber-500 bg-amber-500/10' : 'border-purple-500/50 hover:bg-purple-500/10'}`}>
+        <div 
+          onClick={() => !processando && fileInputRef.current?.click()} 
+          className={`p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+            processando ? 'border-amber-500 bg-amber-500/10' : 'border-purple-500/50 hover:bg-purple-500/10'
+          }`}
+        >
           {processando ? (
             <Loader2 className="w-10 h-10 text-amber-400 animate-spin mx-auto" />
           ) : resultado?.valido ? (
@@ -61,7 +76,12 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
           <p className="text-red-400 text-xs mt-2 font-bold">{resultado.motivo}</p>
         )}
 
-        <button onClick={onCancel} className="mt-4 text-gray-400 text-xs hover:text-white underline">Voltar para instruções</button>
+        <button 
+          onClick={onCancel} 
+          className="mt-4 text-gray-400 text-xs hover:text-white underline"
+        >
+          Voltar para instruções
+        </button>
       </div>
     </div>
   );
