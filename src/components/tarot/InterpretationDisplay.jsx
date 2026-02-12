@@ -5,37 +5,39 @@ import { tarotDeck } from '../../services/tarotData';
 export default function InterpretationDisplay({ cards, theme, personName, birthDate, question }) {
   if (!cards || cards.length === 0) return null;
 
+  // Função para buscar o texto no seu banco de dados (tarotData.js)
   const getCardInterpretation = (card) => {
-    let cardData = tarotDeck[card.id];
+    // Tenta achar pelo ID ou pelo nome normalizado
+    const cardId = card.id || card.name?.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+    const cardData = tarotDeck[cardId];
     
-    if (!cardData && card.name) {
-      const fallbackKey = card.name.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, "");
-      cardData = tarotDeck[fallbackKey];
-    }
-
-    if (!cardData) return "Texto detalhado não localizado no banco de dados.";
+    if (!cardData) return "Oculto: Verifique se o ID da carta no banco de dados está correto.";
     
-    // Normalização do tema para busca no banco
+    // Normaliza o tema (saude, amor, trabalho)
     const activeTheme = theme 
       ? theme.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "") 
       : 'geral';
     
-    return cardData.temas?.[activeTheme] || cardData.upright || cardData.meaning || "Interpretando energias...";
+    // Busca: 1. Tema específico | 2. Texto padrão (upright)
+    return cardData.temas?.[activeTheme] || cardData.upright || "A sabedoria desta carta está guardada no momento.";
   };
 
   return (
     <div className="mt-12 w-full max-w-4xl mx-auto mb-20 space-y-8 animate-fadeIn text-left">
       
-      {/* 1. DADOS DA CONSULTA */}
+      {/* 1. DADOS DA CONSULTA - FORÇANDO EXIBIÇÃO */}
       <div className="bg-white rounded-[2rem] p-8 shadow-xl border-l-8 border-purple-600">
         <h2 className="text-xl font-black text-gray-900 uppercase mb-4 tracking-tight text-center">Dados da Consulta</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6 text-gray-800">
-          <p><strong className="text-purple-700 font-bold uppercase text-[10px] block">Consulente:</strong> {personName || 'Gustavo'}</p>
-          <p><strong className="text-purple-700 font-bold uppercase text-[10px] block">Nascimento:</strong> {birthDate || 'Não informada'}</p>
-          <p><strong className="text-purple-700 font-bold uppercase text-[10px] block">Tema Escolhido:</strong> <span className="font-bold text-purple-900">{theme || 'Amor'}</span></p>
+          <p><strong className="text-purple-700 font-bold uppercase text-[10px] block">Consulente:</strong> {personName || 'Não identificado'}</p>
+          <p><strong className="text-purple-700 font-bold uppercase text-[10px] block">Nascimento:</strong> {birthDate || 'Não informado'}</p>
+          <p><strong className="text-purple-700 font-bold uppercase text-[10px] block">Tema Escolhido:</strong> <span className="font-bold text-purple-900 uppercase">{theme || 'Geral'}</span></p>
+          
           <div className="md:col-span-2 bg-purple-50 p-4 rounded-xl border border-purple-100 mt-2">
-            <strong className="text-purple-700 font-bold uppercase text-[10px] block mb-1">Sua Pergunta:</strong> 
-            <span className="text-xl font-medium text-gray-800 italic">"{question || 'Sua pergunta aparecerá aqui'}"</span>
+            <strong className="text-purple-700 font-bold uppercase text-[10px] block mb-1">Sua Pergunta Realizada:</strong> 
+            <span className="text-xl font-medium text-gray-800 italic">
+              {question && question.trim() !== "" ? `"${question}"` : "Pergunta não capturada pelo sistema."}
+            </span>
           </div>
         </div>
       </div>
@@ -52,7 +54,7 @@ export default function InterpretationDisplay({ cards, theme, personName, birthD
             <div key={index} className="prose prose-xl max-w-none text-gray-900 border-b border-gray-100 pb-8 last:border-0">
               <div className="flex items-center gap-3 mb-4">
                 <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-1 rounded uppercase">
-                  {index === 0 ? "Passado" : index === 1 ? "Presente" : "Futuro"}
+                  {index === 0 ? "O Passado" : index === 1 ? "O Presente" : "O Futuro"}
                 </span>
                 <h3 className="text-2xl font-black text-gray-800 m-0">{card.name}</h3>
               </div>
@@ -64,13 +66,13 @@ export default function InterpretationDisplay({ cards, theme, personName, birthD
         </div>
       </div>
 
-      {/* 3. CONCLUSÃO FINAL - CORREÇÃO DA MISTURA DE TEMAS */}
+      {/* 3. CONCLUSÃO FINAL - TRAVADA NO TEMA E PERGUNTA */}
       <div className="bg-slate-900 rounded-[2rem] p-8 md:p-10 shadow-2xl text-white border-b-8 border-amber-500">
-        <h2 className="text-2xl font-black uppercase mb-6 text-amber-400 text-center">Conclusão Final</h2>
+        <h2 className="text-2xl font-black uppercase mb-6 text-amber-400 text-center text-white">Conclusão Final</h2>
         <div className="text-gray-200 text-center italic leading-relaxed text-lg">
-           Para a sua pergunta: <span className="text-amber-300 font-bold">"{question}"</span>, 
-           as cartas revelam que as energias ligadas ao tema <span className="text-amber-300 font-bold uppercase">{theme}</span> estão em forte evidência. 
-           A carta <span className="text-amber-300">{cards[1]?.name}</span> no presente é a chave para entender seu caminho agora.
+           Para a questão: <span className="text-amber-300 font-bold">"{question || 'Sua jornada'}"</span>, 
+           o oráculo revela que as energias de <span className="text-amber-300 font-bold uppercase">{theme || 'vida'}</span> estão em movimento. 
+           A carta central <span className="text-amber-300">{cards[1]?.name}</span> é o seu guia principal agora.
         </div>
       </div>
     </div>
