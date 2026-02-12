@@ -1,42 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 export default function TarotCardComponent({ card, reversed = false, position }) {
-  if (!card) return null;
+  // Blindagem: Se o card ou id não existirem, não tenta renderizar imagem
+  if (!card || !card.id) {
+    return (
+      <div className="flex flex-col items-center">
+        {position && <span className="mb-4 text-purple-300 text-sm uppercase opacity-50">{position}</span>}
+        {/* Moldura de carregamento (placeholder) */}
+        <div className="w-48 h-80 rounded-2xl border-2 border-dashed border-purple-500/30 bg-gray-900/50 animate-pulse" />
+      </div>
+    );
+  }
 
-  // Formata o nome do arquivo (ex: "o-louco" -> "o louco.jpg")
-  const fileName = card.id.replace(/-/g, ' ') + '.jpg';
-  
-  // Lista de caminhos possíveis para o GitHub Pages
-  const paths = [
-    `assets/cartas/${fileName}`,
-    `/meu-app-android/assets/cartas/${fileName}`,
-    `cartas/${fileName}`,
-    `/assets/cartas/${fileName}`
-  ];
-
-  const [currentPathIndex, setCurrentPathIndex] = useState(0);
-
-  // Log inicial para o terminal do navegador
-  useEffect(() => {
-    console.log(`🔍 Tentativa Inicial [${card.name}]: `, paths[0]);
-  }, [card.id]);
-
-  const handleError = (e) => {
-    const failedUrl = e.target.src;
-    console.error(`❌ FALHA ao carregar: ${failedUrl}`);
-    
-    if (currentPathIndex < paths.length - 1) {
-      const nextIndex = currentPathIndex + 1;
-      const nextPath = paths[nextIndex];
-      
-      console.warn(`➡️ TENTANDO PRÓXIMO CAMINHO (${nextIndex + 1}/${paths.length}): ${nextPath}`);
-      
-      setCurrentPathIndex(nextIndex);
-      e.target.src = nextPath;
-    } else {
-      console.error(`🚫 TODAS AS TENTATIVAS FALHARAM para: ${card.name}`);
-    }
+  const getImagePath = (id) => {
+    // PROTEÇÃO: O replace só roda se o id existir
+    let fileName = id.replace(/-/g, ' ');
+    if (id === 'o-eremita') fileName = 'o heremita';
+    if (id === 'a-roda-da-fortuna') fileName = 'a roda-da-fortuna';
+    return `assets/cartas/${fileName}.jpg`;
   };
+
+  const imagePath = getImagePath(card.id);
 
   return (
     <div className="flex flex-col items-center">
@@ -48,14 +32,20 @@ export default function TarotCardComponent({ card, reversed = false, position })
       
       <div className="relative w-48 h-80 rounded-2xl overflow-hidden border-4 border-amber-400 shadow-2xl bg-gray-900">
         <img 
-          src={paths[currentPathIndex]} 
-          alt={card.name}
+          src={imagePath} 
+          alt={card.name || 'Carta'}
           className={`w-full h-full object-cover ${reversed ? 'rotate-180' : ''}`}
-          onLoad={() => console.log(`✅ SUCESSO ao carregar [${card.name}]: `, paths[currentPathIndex])}
-          onError={handleError}
+          onError={(e) => {
+            console.error("Falha ao carregar:", e.target.src);
+            if (!e.target.dataset.tried) {
+              e.target.dataset.tried = "true";
+              // Tenta carregar de um caminho alternativo se o principal falhar
+              e.target.src = `assets/cartas/${card.id.replace(/-/g, ' ')}.jpg`;
+            }
+          }}
         />
         <div className="absolute bottom-0 left-0 right-0 p-3 text-center bg-black/70 backdrop-blur-sm">
-           <p className="text-white font-bold text-[10px] uppercase tracking-tighter">{card.name}</p>
+           <p className="text-white font-bold text-[10px] uppercase tracking-tighter">{card.name || 'Carta'}</p>
         </div>
       </div>
     </div>
