@@ -46,7 +46,7 @@ export default function ThreeCardsReading() {
   const [selectedTheme, setSelectedTheme] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
-  const [personInfo, setPersonInfo] = useState(null);
+  const [personInfo, setPersonInfo] = useState({ name: '', birthDate: '', question: '' });
   const [reading, setReading] = useState(null);
   const [revealedCards, setRevealedCards] = useState([false, false, false]);
   const [generating, setGenerating] = useState(false);
@@ -62,6 +62,10 @@ export default function ThreeCardsReading() {
   const handlePaymentConfirmed = async (paymentData) => {
     setShowPayment(false);
     setGenerating(true);
+    
+    // Backup de segurança para a pergunta antes do envio
+    localStorage.setItem('userQuestion', personInfo.question);
+
     try {
       const selectedCards = [];
       const usedIndices = new Set();
@@ -70,7 +74,7 @@ export default function ThreeCardsReading() {
         if (!usedIndices.has(index)) {
           usedIndices.add(index);
           selectedCards.push({
-            card_name: tarotCards[index],
+            name: tarotCards[index], // Mapeamento correto para o card.name
             position: ['Passado', 'Presente', 'Futuro'][selectedCards.length],
             reversed: Math.random() > 0.5
           });
@@ -91,7 +95,7 @@ export default function ThreeCardsReading() {
       });
 
       await supabase.from('ids').insert([{ 
-        dado: `USER: ${personInfo.name} | ID: ${paymentData.idEncontrado} | THEME: ${selectedTheme} | DATE: ${new Date().toISOString()}` 
+        dado: `USER: ${personInfo.name} | ID: ${paymentData.idEncontrado} | THEME: ${selectedTheme} | Q: ${personInfo.question}` 
       }]);
 
       setReading(newReading);
@@ -125,12 +129,19 @@ export default function ThreeCardsReading() {
 
         {showForm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-md mx-auto bg-black/40 border border-white/10 rounded-3xl p-8 backdrop-blur-md mb-12">
-            <h2 className="text-2xl font-bold text-center mb-6">Seus Dados</h2>
-            <form onSubmit={(e) => { e.preventDefault(); const d = new FormData(e.target); setPersonInfo({ name: d.get('name'), birthDate, question: d.get('question') }); setShowForm(false); setShowPayment(true); }} className="space-y-4">
+            <h2 className="text-2xl font-bold text-center mb-6 uppercase">Seus Dados</h2>
+            <form onSubmit={(e) => { 
+              e.preventDefault(); 
+              const d = new FormData(e.target); 
+              const q = d.get('question');
+              setPersonInfo({ name: d.get('name'), birthDate, question: q }); 
+              setShowForm(false); 
+              setShowPayment(true); 
+            }} className="space-y-4">
               <input name="name" required placeholder="Nome Completo" className="w-full bg-white/5 border border-white/20 rounded-xl p-4 text-white outline-none focus:border-purple-500" />
               <input value={birthDate} onChange={handleDateChange} required placeholder="Nascimento (DD/MM/AAAA)" className="w-full bg-white/5 border border-white/20 rounded-xl p-4 text-white outline-none focus:border-purple-500" />
-              <textarea name="question" required placeholder="Sua pergunta..." className="w-full bg-white/5 border border-white/20 rounded-xl p-4 text-white outline-none focus:border-purple-500 h-32" />
-              <button type="submit" className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-all">CONTINUAR</button>
+              <textarea name="question" required placeholder="Sua pergunta (Ex: Vou engravidar?)" className="w-full bg-white/5 border border-white/20 rounded-xl p-4 text-white outline-none focus:border-purple-500 h-32" />
+              <button type="submit" className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-all">CONTINUAR PARA O PAGAMENTO</button>
             </form>
           </motion.div>
         )}
@@ -141,17 +152,17 @@ export default function ThreeCardsReading() {
           <div className="space-y-12">
             <div className="flex flex-wrap justify-center gap-8">
               {reading.cards.map((c, i) => (
-                <TarotCardComponent key={i} card={{ name: c.card_name }} reversed={c.reversed} revealed={revealedCards[i]} onReveal={() => {}} position={c.position} autoReveal={true} />
+                <TarotCardComponent key={i} card={{ name: c.name }} reversed={c.reversed} revealed={revealedCards[i]} onReveal={() => {}} position={c.position} autoReveal={true} />
               ))}
             </div>
             {revealedCards.every(r => r) && (
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md max-w-4xl mx-auto mb-12">
+              <div className="bg-transparent max-w-4xl mx-auto mb-12">
                 <InterpretationDisplay 
-                  interpretation={reading.interpretation} 
                   cards={reading.cards} 
                   theme={selectedTheme} 
                   personName={reading.person_name} 
                   birthDate={reading.birth_date} 
+                  question={personInfo.question || localStorage.getItem('userQuestion')}
                 />
               </div>
             )}
