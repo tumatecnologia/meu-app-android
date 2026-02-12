@@ -29,7 +29,6 @@ const themes = [
 
 const tarotCards = ['O Louco', 'O Mago', 'A Sacerdotisa', 'A Imperatriz', 'O Imperador', 'O Hierofante', 'Os Enamorados', 'O Carro', 'A Força', 'O Eremita', 'A Roda da Fortuna', 'A Justiça', 'O Enforcado', 'A Morte', 'A Temperança', 'O Diabo', 'A Torre', 'A Estrela', 'A Lua', 'O Sol', 'O Julgamento', 'O Mundo'];
 
-// MAPEAMENTO PARA AS IMAGENS APARECEREM
 const getCardImagePath = (name) => {
   const map = {
     'O Louco': 'o louco.jpg', 'O Mago': 'o mago.jpg', 'A Sacerdotisa': 'a sacerdotisa.jpg',
@@ -218,7 +217,7 @@ export default function ThreeCardsReading() {
           <div className="space-y-12">
             <div className="flex flex-wrap justify-center gap-8">
               {reading.cards.map((c, i) => (
-                <TarotCardComponent key={i} card={{ name: c.card_name, image: getCardImagePath(c.card_name) }} reversed={c.reversed} revealed={revealedCards[i]} onReveal={() => {}} position={c.position} autoReveal={true} />
+                <TarotCardComponent key={i} card={{ name: c.card_name, image: getCardImagePath(c.card_name) }} image={getCardImagePath(c.card_name)} reversed={c.reversed} revealed={revealedCards[i]} onReveal={() => {}} position={c.position} autoReveal={true} />
               ))}
             </div>
             {revealedCards.every(r => r) && (
