@@ -8,12 +8,18 @@ import PaymentModal from '../components/tarot/PaymentModal';
 import InterpretationDisplay from '../components/tarot/InterpretationDisplay';
 import { base44 } from '../api/base44Client';
 import { createClient } from '@supabase/supabase-js';
+import { createWorker } from 'tesseract.js';
+
+// Configurações do Supabase para Registro de Transação
+const SUPABASE_URL_REST = 'https://npmdvkggsklkideqoriw.supabase.co/rest/v1/ids';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wbWR2a2dnc2tsa2lkZXFvcml3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzMyMDAsImV4cCI6MjA4NjE0OTIwMH0.y-X0NS-_9BV7RhtSUOteLhaUPnt8Tkf24NlUikR8Ifo';
 
 const supabase = createClient(
   'https://npmdvkggsklkideqoriw.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wbWR2a2dnc2tsa2lkZXFvcml3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzMyMDAsImV4cCI6MjA4NjE0OTIwMH0.y-X0NS-_9BV7RhtSUOteLhaUPnt8Tkf24NlUikR8Ifo'
+  SUPABASE_KEY
 );
 
+// Mapeamento de Imagens Corrigido
 const tarotCardsFileMap = {
   'O Louco': 'o louco',
   'O Mago': 'o mago',
@@ -59,15 +65,100 @@ const getCardImagePath = (cardName) => {
   return `/assets/cartas/${fileName}.jpg`;
 };
 
-// --- SERVIÇO DE PAGAMENTO (O que o Uploader chama) ---
+// --- SERVIÇO DE PAGAMENTO (RESTAURADO DO BACKUP) ---
 export const PaymentControlService = {
   processarArquivo: async (file) => {
-    // Simulando o processamento para não dar erro de sistema
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ valido: true, idEncontrado: "VALIDADO-" + Date.now() });
-      }, 2000);
-    });
+    try {
+      if (!file.type.startsWith('image/')) {
+        alert("❌ Formato não aceito! Por favor tire print do comprovante.");
+        return { valido: false };
+      }
+
+      const reader = new FileReader();
+      const imagemData = await new Promise((resolve) => {
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(file);
+      });
+
+      const worker = await createWorker('por');
+      const { data: { text } } = await worker.recognize(imagemData);
+      await worker.terminate();
+
+      const textoLimpo = text.toUpperCase();
+
+      const transactionID = textoLimpo.match(/([A-Z0-9]{15,})/)?.[0];
+      
+      if (!transactionID) {
+        alert("❌ ID não encontrado. Use uma imagem mais clara.");
+        return { valido: false };
+      }
+
+      const checkResponse = await fetch(`${SUPABASE_URL_REST}?dado=ilike.*${transactionID}*`, {
+        method: 'GET',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      const existingRecords = await checkResponse.json();
+      if (existingRecords.length > 0) {
+        alert("❌ COMPROVANTE JÁ UTILIZADO!");
+        return { valido: false };
+      }
+
+      const palavrasRecebimento = ["PARA", "BENEFICIÁRIO", "BENEFICIARIO", "DESTINO", "DESTINATÁRIO", "DESTINATARIO", "RECEBEDOR", "FAVORECIDO"];
+      const variacoesNome = ["GUSTAVO SANTOS RIBEIRO", "GUSTAVO S. RIBEIRO", "GUSTAVO S RIBEIRO"];
+      
+      let nomeValidado = false;
+      for (let nome of variacoesNome) {
+        if (textoLimpo.includes(nome)) {
+          const indexNome = textoLimpo.indexOf(nome);
+          const contextoAntes = textoLimpo.substring(Math.max(0, indexNome - 60), indexNome);
+          if (palavrasRecebimento.some(palavra => contextoAntes.includes(palavra))) {
+            nomeValidado = true;
+            break;
+          }
+        }
+      }
+      
+      if (!nomeValidado) {
+        alert("❌ DESTINATÁRIO INCORRETO!\n\nO comprovante deve mostrar Gustavo Santos Ribeiro como recebedor.");
+        return { valido: false };
+      }
+
+      const regexValor = /(?:R\$|VALOR|PAGO)?\s?(\d{1,3}(?:\.\d{3})*,\d{2})/i;
+      const valorMatch = textoLimpo.match(regexValor);
+      let valorComprovante = 0;
+
+      if (valorMatch) {
+        valorComprovante = parseFloat(valorMatch[1].replace(/\./g, '').replace(',', '.'));
+      }
+
+      if (valorComprovante < 10.00) {
+        alert(`❌ VALOR INSUFICIENTE!\n\nValor detectado: R$ ${valorComprovante.toFixed(2)}\nValor mínimo: R$ 10,00`);
+        return { valido: false };
+      }
+
+      const conteudoParaGravar = `ID: ${transactionID} | VALOR: R$ ${valorComprovante.toFixed(2)} | REGISTRO: ${new Date().toLocaleString('pt-BR')}`;
+      
+      const response = await fetch(SUPABASE_URL_REST, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ dado: conteudoParaGravar })
+      });
+
+      if (!response.ok) throw new Error("Erro ao gravar");
+
+      alert("✅ SUCESSO! Pagamento validado.");
+      return { valido: true, idEncontrado: transactionID };
+
+    } catch (error) {
+      console.error("Erro Final:", error);
+      alert("❌ Falha no processamento.");
+      return { valido: false };
+    }
   }
 };
 
@@ -126,15 +217,11 @@ export default function ThreeCardsReading() {
       const newReading = await base44.entities.Reading.create({
         type: 'three_cards',
         person_name: personInfo.name,
-        birth_date: personInfo.birth_date,
+        birth_date: personInfo.birthDate,
         theme: selectedTheme,
         cards: selectedCards,
         interpretation: response.content
       });
-
-      await supabase.from('ids').insert([{ 
-        dado: `USER: ${personInfo.name} | ID: ${paymentData.idEncontrado} | THEME: ${selectedTheme} | DATE: ${new Date().toISOString()}` 
-      }]);
 
       setReading(newReading);
       setTimeout(() => setRevealedCards([true, true, true]), 1000);
@@ -177,45 +264,4 @@ export default function ThreeCardsReading() {
           </motion.div>
         )}
 
-        {generating && <div className="text-center py-20 animate-pulse text-2xl font-bold">🔮 Consultando o Oráculo...</div>}
-
-        {reading && (
-          <div className="space-y-12">
-            <div className="flex flex-wrap justify-center gap-8">
-              {reading.cards.map((c, i) => (
-                <TarotCardComponent 
-                  key={i} 
-                  card={{ 
-                    name: c.card_name,
-                    image: getCardImagePath(c.card_name) 
-                  }} 
-                  reversed={c.reversed} 
-                  revealed={revealedCards[i]} 
-                  onReveal={() => {}} 
-                  position={c.position} 
-                  autoReveal={true} 
-                />
-              ))}
-            </div>
-            {revealedCards.every(r => r) && (
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md max-w-4xl mx-auto mb-12">
-                <InterpretationDisplay 
-                  interpretation={reading.interpretation} 
-                  cards={reading.cards} 
-                  theme={selectedTheme} 
-                  personName={reading.person_name} 
-                  birthDate={reading.birth_date} 
-                />
-              </div>
-            )}
-            <div className="text-center"><button onClick={() => window.location.reload()} className="bg-white/10 text-white px-8 py-3 rounded-full hover:bg-white/20 transition-all">Nova Consulta</button></div>
-          </div>
-        )}
-
-        {!generating && <ConsultasParticulares />}
-
-        {showPayment && <PaymentModal isOpen={showPayment} onClose={() => setShowPayment(false)} onPaymentConfirmed={handlePaymentConfirmed} theme={selectedTheme} />}
-      </div>
-    </div>
-  );
-}
+        {generating && <div className="text-center
