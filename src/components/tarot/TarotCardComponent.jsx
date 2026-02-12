@@ -1,15 +1,14 @@
 import React from 'react';
 
 export default function TarotCardComponent({ card, reversed = false, position }) {
-  if (!card || !card.id) return null;
+  // REMOVIDO: A proteção que escondia o componente
+  if (!card) return null;
 
   const getImagePath = (id) => {
-    // 1. Identifica o nome do arquivo exatamente como você listou
-    let fileName = id.replace(/-/g, ' ');
+    // PROTEÇÃO: O replace só roda se o id existir
+    let fileName = id ? id.replace(/-/g, ' ') : 'o-louco';
     if (id === 'o-eremita') fileName = 'o heremita';
     if (id === 'a-roda-da-fortuna') fileName = 'a roda-da-fortuna';
-    
-    // 2. Caminho relativo simples - costuma funcionar melhor no GH Pages
     return `assets/cartas/${fileName}.jpg`;
   };
 
@@ -23,22 +22,23 @@ export default function TarotCardComponent({ card, reversed = false, position })
         </span>
       )}
       
+      {/* Moldura sempre visível, mesmo que a imagem falhe */}
       <div className="relative w-48 h-80 rounded-2xl overflow-hidden border-4 border-amber-400 shadow-2xl bg-gray-900">
         <img 
           src={imagePath} 
-          alt={card.name}
+          alt={card.name || 'Carta'}
           className={`w-full h-full object-cover ${reversed ? 'rotate-180' : ''}`}
           onError={(e) => {
-            // Se falhar, tenta sem o 'assets/'
+            console.error("Erro ao carregar imagem:", e.target.src);
             if (!e.target.dataset.tried) {
               e.target.dataset.tried = "true";
-              const currentSrc = e.target.src;
-              e.target.src = currentSrc.replace('assets/cartas/', 'cartas/');
+              // Tentativa de fallback
+              e.target.src = `assets/cartas/${card.id.replace(/-/g, ' ')}.jpg`;
             }
           }}
         />
         <div className="absolute bottom-0 left-0 right-0 p-3 text-center bg-black/70 backdrop-blur-sm">
-           <p className="text-white font-bold text-xs uppercase tracking-widest">{card.name}</p>
+           <p className="text-white font-bold text-[10px] uppercase tracking-tighter">{card.name || 'Carregando...'}</p>
         </div>
       </div>
     </div>
