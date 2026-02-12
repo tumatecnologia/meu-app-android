@@ -1,18 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function TarotCardComponent({ card, reversed = false, position }) {
-  // REMOVIDO: A proteção que escondia o componente
   if (!card) return null;
 
-  const getImagePath = (id) => {
-    // PROTEÇÃO: O replace só roda se o id existir
-    let fileName = id ? id.replace(/-/g, ' ') : 'o-louco';
-    if (id === 'o-eremita') fileName = 'o heremita';
-    if (id === 'a-roda-da-fortuna') fileName = 'a roda-da-fortuna';
-    return `assets/cartas/${fileName}.jpg`;
-  };
+  // Formata o nome do arquivo (ex: "o-louco" -> "o louco.jpg")
+  const fileName = card.id.replace(/-/g, ' ') + '.jpg';
+  
+  // Lista de caminhos possíveis para o GitHub Pages
+  const paths = [
+    `assets/cartas/${fileName}`,
+    `/meu-app-android/assets/cartas/${fileName}`,
+    `cartas/${fileName}`,
+    `/assets/cartas/${fileName}`
+  ];
 
-  const imagePath = getImagePath(card.id);
+  const [currentPathIndex, setCurrentPathIndex] = useState(0);
+
+  // Log inicial para o terminal do navegador
+  useEffect(() => {
+    console.log(`🔍 Tentativa Inicial [${card.name}]: `, paths[0]);
+  }, [card.id]);
+
+  const handleError = (e) => {
+    const failedUrl = e.target.src;
+    console.error(`❌ FALHA ao carregar: ${failedUrl}`);
+    
+    if (currentPathIndex < paths.length - 1) {
+      const nextIndex = currentPathIndex + 1;
+      const nextPath = paths[nextIndex];
+      
+      console.warn(`➡️ TENTANDO PRÓXIMO CAMINHO (${nextIndex + 1}/${paths.length}): ${nextPath}`);
+      
+      setCurrentPathIndex(nextIndex);
+      e.target.src = nextPath;
+    } else {
+      console.error(`🚫 TODAS AS TENTATIVAS FALHARAM para: ${card.name}`);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center">
@@ -22,23 +46,16 @@ export default function TarotCardComponent({ card, reversed = false, position })
         </span>
       )}
       
-      {/* Moldura sempre visível, mesmo que a imagem falhe */}
       <div className="relative w-48 h-80 rounded-2xl overflow-hidden border-4 border-amber-400 shadow-2xl bg-gray-900">
         <img 
-          src={imagePath} 
-          alt={card.name || 'Carta'}
+          src={paths[currentPathIndex]} 
+          alt={card.name}
           className={`w-full h-full object-cover ${reversed ? 'rotate-180' : ''}`}
-          onError={(e) => {
-            console.error("Erro ao carregar imagem:", e.target.src);
-            if (!e.target.dataset.tried) {
-              e.target.dataset.tried = "true";
-              // Tentativa de fallback
-              e.target.src = `assets/cartas/${card.id.replace(/-/g, ' ')}.jpg`;
-            }
-          }}
+          onLoad={() => console.log(`✅ SUCESSO ao carregar [${card.name}]: `, paths[currentPathIndex])}
+          onError={handleError}
         />
         <div className="absolute bottom-0 left-0 right-0 p-3 text-center bg-black/70 backdrop-blur-sm">
-           <p className="text-white font-bold text-[10px] uppercase tracking-tighter">{card.name || 'Carregando...'}</p>
+           <p className="text-white font-bold text-[10px] uppercase tracking-tighter">{card.name}</p>
         </div>
       </div>
     </div>
