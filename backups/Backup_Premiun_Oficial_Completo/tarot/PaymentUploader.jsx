@@ -25,7 +25,6 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
       setProcessando(false);
 
       if (res.valido) {
-        // AQUI ESTÁ A CHAVE: Chamando a função que o Modal espera
         if (onValidationComplete) {
           onValidationComplete(res);
         }
@@ -38,7 +37,15 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
 
   return (
     <div className="w-full max-w-xs mx-auto p-2">
-      <input ref={fileInputRef} type="file" accept="image/*,.pdf" capture="environment" onChange={handleFileSelect} className="hidden" disabled={processando} />
+      {/* CORREÇÃO AQUI: Removido o capture="environment" para habilitar a Galeria */}
+      <input 
+        ref={fileInputRef} 
+        type="file" 
+        accept="image/*,.pdf" 
+        onChange={handleFileSelect} 
+        className="hidden" 
+        disabled={processando} 
+      />
       
       <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-4 shadow-md text-center">
         <h2 className="text-lg font-bold text-white mb-4">📱 Enviar Comprovante</h2>
