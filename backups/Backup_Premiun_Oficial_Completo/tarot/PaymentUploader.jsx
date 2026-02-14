@@ -37,11 +37,11 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
 
   return (
     <div className="w-full max-w-xs mx-auto p-2">
-      {/* CORREÇÃO AQUI: Removido o capture="environment" para habilitar a Galeria */}
+      {/* CORREÇÃO AQUI: accept explícito para image/* e application/pdf sem o capture */}
       <input 
         ref={fileInputRef} 
         type="file" 
-        accept="image/*,.pdf" 
+        accept="image/*,application/pdf" 
         onChange={handleFileSelect} 
         className="hidden" 
         disabled={processando} 
