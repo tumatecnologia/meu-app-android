@@ -74,3 +74,4 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
 
 export default PaymentUploader;
 // Forçando novo build
+// Build forçado em: Sat Feb 14 13:27:08 UTC 2026
