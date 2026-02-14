@@ -73,3 +73,4 @@ const PaymentUploader = ({ onValidationComplete, onCancel }) => {
 };
 
 export default PaymentUploader;
+// Forçando novo build
