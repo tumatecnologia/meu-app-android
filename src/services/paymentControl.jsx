@@ -96,7 +96,7 @@ export const PaymentControlService = {
         valorComprovante = parseFloat(valorMatch[1].replace(/\./g, '').replace(',', '.'));
       }
       if (valorComprovante < 10.00) {
-        alert(`❌ VALOR INSUFICIENTE!\n\nValor detectado: R$ ${valorComprovante.toFixed(2)}\nValor mínimo: R$ 10,00`);
+        alert(`❌ VALOR INSUFICIENTE!\n\nValor detectado: R$ ${valorComprovante.toFixed(2)}\nValor mínimo: R$ 5,00`);
         return { valido: false };
       }
       const conteudoParaGravar = `ID: ${transactionID} | VALOR: R$ ${valorComprovante.toFixed(2)} | REGISTRO: ${new Date().toLocaleString('pt-BR')}`;

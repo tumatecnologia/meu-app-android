@@ -4,7 +4,7 @@ export const validatePix = (ocrText) => {
   const idMatch = cleanText.match(idPattern);
   
   if (!idMatch) return { success: false, error: "❌ ID não encontrado." };
-  if (!cleanText.includes("10,00") && !cleanText.includes("10.00")) return { success: false, error: "❌ Valor incorreto." };
+  if (!cleanText.includes("5,00") && !cleanText.includes("5.00")) return { success: false, error: "❌ Valor incorreto." };
 
   return { success: true, idEncontrado: idMatch[0] };
 };

@@ -14,7 +14,7 @@ const ManualValidation = ({ onValidate, onCancel }) => {
     
     const valorNumerico = parseFloat(valor.replace(',', '.'));
     if (valorNumerico < 10) {
-      alert('O valor mínimo é R$ 10,00.');
+      alert('O valor mínimo é R$ 5,00.');
       return;
     }
     
@@ -49,7 +49,7 @@ const ManualValidation = ({ onValidate, onCancel }) => {
           </label>
           <input
             type="text"
-            placeholder="Ex: 10,00"
+            placeholder="Ex: 5,00"
             value={valor}
             onChange={(e) => setValor(e.target.value)}
             className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"

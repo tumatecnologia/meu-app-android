@@ -85,9 +85,9 @@ export default function Home() {
                   <div className="space-y-2 w-full">
                     <div className="inline-flex items-center gap-2 bg-amber-500/20 px-4 py-2 rounded-full">
                       <Sparkles className="w-4 h-4 text-amber-400" />
-                      <span className="text-amber-400 font-semibold">Mínimo R$ 10,00</span>
+                      <span className="text-amber-400 font-semibold">Valor R$ 5,00</span>
                     </div>
-                    <p className="text-sm text-purple-300">Pagamento via PIX (valor mínimo)</p>
+                    <p className="text-sm text-purple-300">Pagamento via PIX</p>
                   </div>
                 </div>
               </div>
