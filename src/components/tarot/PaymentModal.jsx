@@ -10,7 +10,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentConfirmed }) {
   if (!isOpen) return null;
 
   const handleCopyPix = () => {
-    navigator.clipboard.writeText('12996764694');
+    navigator.clipboard.writeText('1299793-4925');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -38,7 +38,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentConfirmed }) {
               <div className="bg-black/40 rounded-xl p-4 border border-white/10 text-center">
                 <p className="text-xs text-gray-400 uppercase mb-2 font-bold">Chave PIX (Telefone)</p>
                 <div className="flex items-center gap-2 mb-2">
-                  <p className="flex-1 font-mono text-xl font-bold text-white">12996764694</p>
+                  <p className="flex-1 font-mono text-xl font-bold text-white">1299793-4925</p>
                   <button onClick={handleCopyPix} className={`p-2 rounded-lg ${copied ? 'bg-green-600' : 'bg-purple-600'}`}>
                     {copied ? <Check className="w-5 h-5 text-white" /> : <Copy className="w-5 h-5 text-white" />}
                   </button>
