@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Sun, Lock, Calendar, Sparkles, LayoutGrid } from 'lucide-react';
 
 export default function DailyCard() {
@@ -171,11 +171,12 @@ export default function DailyCard() {
                   </p>
                 </div>
 
-                {/* Bloco com o Novo Botão direcionando para a Home */}
                 <div className="bg-purple-950/60 rounded-2xl p-6 border border-amber-400/40 text-center space-y-4">
                   <p className="text-amber-200 font-medium italic">
                     "Para entender como essa energia afeta seu passado, presente e futuro próximo, você precisa de uma visão completa."
                   </p>
+                  
+                  {/* BOTÃO CORRIGIDO PARA VOLTAR À HOME */}
                   <button 
                     onClick={() => navigate('/')}
                     className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-purple-900 font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105 shadow-lg"
@@ -183,6 +184,7 @@ export default function DailyCard() {
                     <LayoutGrid className="w-5 h-5" />
                     Fazer Jogo de 3 Cartas Agora
                   </button>
+                  
                   <p className="text-purple-300 text-xs">
                     * Recomendado para decisões importantes e clareza profunda.
                   </p>
