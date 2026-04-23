@@ -75,6 +75,7 @@ export default function DailyCard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-950 via-violet-900 to-purple-950 py-8 px-4">
       <div className="container mx-auto max-w-4xl">
+        {/* Botão Voltar Superior */}
         <button 
           onClick={() => navigate('/')}
           className="flex items-center text-purple-200 hover:text-white mb-8 p-2 rounded-lg hover:bg-white/10 transition-all"
@@ -170,12 +171,13 @@ export default function DailyCard() {
                   </p>
                 </div>
 
+                {/* Bloco com o Novo Botão direcionando para a Home */}
                 <div className="bg-purple-950/60 rounded-2xl p-6 border border-amber-400/40 text-center space-y-4">
                   <p className="text-amber-200 font-medium italic">
                     "Para entender como essa energia afeta seu passado, presente e futuro próximo, você precisa de uma visão completa."
                   </p>
                   <button 
-                    onClick={() => navigate('/tarot')}
+                    onClick={() => navigate('/')}
                     className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-purple-900 font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105 shadow-lg"
                   >
                     <LayoutGrid className="w-5 h-5" />
