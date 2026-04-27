@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+// Garanti que todos os ícones usados estão aqui
 import { ArrowLeft, Sun, Lock, Sparkles, LayoutGrid, MessageSquare } from 'lucide-react';
 import TarotCardComponent from '../components/tarot/TarotCardComponent';
 
@@ -52,17 +53,12 @@ export default function DailyCard() {
     }
   }, []);
 
-  // LÓGICA DE SORTEIO ÚNICO POR DISPOSITIVO
   const generateDailyCard = () => {
     const today = new Date();
     const datePart = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-    
-    // Fingerprint: Usa características do navegador para gerar um ID único para este dispositivo
+    // O Fingerprint garante que o sorteio mude por aparelho
     const userFingerprint = (navigator.userAgent.length) + (screen.height * screen.width) + (navigator.language.length);
-    
-    // A soma da data com o ID do dispositivo garante que cada pessoa tenha uma carta diferente no mesmo dia
     const combinedSeed = datePart + userFingerprint;
-    
     const randomIndex = Math.floor((combinedSeed * 9301 + 49297) % 233280) % tarotCards.length;
     return tarotCards[randomIndex];
   };
@@ -84,9 +80,9 @@ export default function DailyCard() {
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
     const diffMs = tomorrow - now;
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    return `${diffHours}h ${diffMinutes}m`;
+    const h = Math.floor(diffMs / (1000 * 60 * 60));
+    const m = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${h}h ${m}m`;
   };
 
   return (
@@ -112,7 +108,7 @@ export default function DailyCard() {
           <div className="flex justify-center mb-10">
              <div className="inline-flex items-center gap-2 bg-black/40 px-5 py-2 rounded-full border border-amber-400/30 shadow-lg">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <span className="text-amber-300 font-bold text-sm">Próxima renovação em: {getNextAvailableTime()}</span>
+              <span className="text-amber-300 font-bold text-sm">Renovação em: {getNextAvailableTime()}</span>
             </div>
           </div>
         )}
@@ -130,10 +126,10 @@ export default function DailyCard() {
           </div>
         ) : (
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="space-y-10">
-            {/* COMPONENTE OFICIAL DO SEU APP */}
             <div className="flex justify-center scale-110 md:scale-125 my-10">
+              {/* O componente deve estar no caminho ../components/tarot/TarotCardComponent */}
               <TarotCardComponent 
-                card={{ name: selectedCard.name }} 
+                card={{ name: selectedCard?.name || '' }} 
                 reversed={false} 
                 revealed={true} 
                 onReveal={() => {}} 
@@ -142,22 +138,38 @@ export default function DailyCard() {
               />
             </div>
 
-            {/* INTERPRETAÇÃO ESTILIZADA */}
             <div className="bg-gradient-to-b from-white/10 to-transparent backdrop-blur-md rounded-[2.5rem] p-10 border border-white/10 max-w-2xl mx-auto shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-50" />
-              
-              <h2 className="text-3xl font-black text-amber-400 mb-6 text-center uppercase tracking-tighter">
-                Sua Orientação
-              </h2>
-              
+              <h2 className="text-3xl font-black text-amber-400 mb-6 text-center uppercase tracking-tighter">Sua Orientação</h2>
               <div className="space-y-8">
                 <p className="text-purple-50 text-xl leading-relaxed text-center font-medium italic">
-                  "A energia de <strong>{selectedCard.name}</strong> foca em {selectedCard.meaning}. 
-                  Esta vibração foi atraída especificamente para o seu caminho hoje."
+                  "A energia de <strong>{selectedCard?.name}</strong> foca em {selectedCard?.meaning}. 
+                  Esta vibração foi atraída especificamente para você hoje."
                 </p>
-                
-                <p className="text-purple-200 text-center leading-relaxed">
-                  Lembre-se: o tarô diário indica a tendência do seu dia. Para decisões profundas e uma visão de longo prazo, é necessária uma análise completa do seu momento.
-                </p>
-                
-                <div className="bg-purple-950/80 rounded-3xl p
+                <div className="bg-purple-950/80 rounded-3xl p-8 border border-amber-400/30 text-center space-y-5">
+                  <p className="text-amber-200 font-bold uppercase text-sm tracking-widest">Aprofunde sua consulta</p>
+                  <button 
+                    onClick={() => navigate('/')}
+                    className="inline-flex items-center gap-3 bg-gradient-to-r from-amber-400 to-orange-500 text-purple-950 font-black py-4 px-10 rounded-full transition-all transform hover:scale-105 shadow-xl uppercase text-sm"
+                  >
+                    <LayoutGrid className="w-5 h-5" />
+                    Fazer Jogo de 3 Cartas
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        <div className="mt-20 relative bg-gradient-to-br from-amber-500/20 via-purple-900/60 to-violet-900/60 backdrop-blur-md border-2 border-amber-400/50 rounded-[2.5rem] p-10 max-w-4xl mx-auto shadow-2xl text-center">
+          <div className="text-5xl mb-6">🔮</div>
+          <h3 className="text-3xl font-black bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 bg-clip-text text-transparent mb-4 uppercase tracking-tighter text-white">Consultas Particulares</h3>
+          <p className="text-purple-100 text-lg mb-8 leading-relaxed font-medium">Agende sua consulta diretamente pelo WhatsApp!</p>
+          <a href="https://wa.me/5512996764694" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-4 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 text-purple-950 px-12 py-5 rounded-full font-black text-xl shadow-[0_0_30px_rgba(251,191,36,0.4)] hover:scale-105 transition-all uppercase tracking-tight">
+            <MessageSquare className="w-8 h-8" /> WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
