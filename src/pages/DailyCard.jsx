@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-// Garanti que todos os ícones usados estão aqui
 import { ArrowLeft, Sun, Lock, Sparkles, LayoutGrid, MessageSquare } from 'lucide-react';
 import TarotCardComponent from '../components/tarot/TarotCardComponent';
 
@@ -56,7 +55,6 @@ export default function DailyCard() {
   const generateDailyCard = () => {
     const today = new Date();
     const datePart = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-    // O Fingerprint garante que o sorteio mude por aparelho
     const userFingerprint = (navigator.userAgent.length) + (screen.height * screen.width) + (navigator.language.length);
     const combinedSeed = datePart + userFingerprint;
     const randomIndex = Math.floor((combinedSeed * 9301 + 49297) % 233280) % tarotCards.length;
@@ -86,7 +84,7 @@ export default function DailyCard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-950 via-violet-900 to-purple-950 py-8 px-4 font-sans text-white">
+    <div className="min-h-screen bg-gradient-to-br from-purple-950 via-violet-900 to-purple-950 py-8 px-4 font-sans text-white relative">
       <div className="container mx-auto max-w-4xl">
         <button 
           onClick={() => navigate('/')}
@@ -105,7 +103,7 @@ export default function DailyCard() {
         </motion.div>
 
         {alreadyReadToday && (
-          <div className="flex justify-center mb-10">
+          <div className="flex justify-center mb-6">
              <div className="inline-flex items-center gap-2 bg-black/40 px-5 py-2 rounded-full border border-amber-400/30 shadow-lg">
               <Sparkles className="w-4 h-4 text-amber-400" />
               <span className="text-amber-300 font-bold text-sm">Renovação em: {getNextAvailableTime()}</span>
@@ -126,8 +124,9 @@ export default function DailyCard() {
           </div>
         ) : (
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="space-y-10">
-            <div className="flex justify-center scale-110 md:scale-125 my-10">
-              {/* O componente deve estar no caminho ../components/tarot/TarotCardComponent */}
+            
+            {/* AJUSTE FEITO AQUI: Mudei my-10 para mt-16 mb-10 para dar espaço superior */}
+            <div className="flex justify-center scale-110 md:scale-125 mt-16 mb-10">
               <TarotCardComponent 
                 card={{ name: selectedCard?.name || '' }} 
                 reversed={false} 
@@ -140,7 +139,7 @@ export default function DailyCard() {
 
             <div className="bg-gradient-to-b from-white/10 to-transparent backdrop-blur-md rounded-[2.5rem] p-10 border border-white/10 max-w-2xl mx-auto shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-50" />
-              <h2 className="text-3xl font-black text-amber-400 mb-6 text-center uppercase tracking-tighter">Sua Orientação</h2>
+              <h2 className="text-3xl font-black text-amber-400 mb-6 text-center uppercase tracking-tighter tracking-tight">Sua Orientação</h2>
               <div className="space-y-8">
                 <p className="text-purple-50 text-xl leading-relaxed text-center font-medium italic">
                   "A energia de <strong>{selectedCard?.name}</strong> foca em {selectedCard?.meaning}. 
