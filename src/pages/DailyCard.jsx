@@ -39,10 +39,21 @@ export default function DailyCard() {
     }
   }, []);
 
+  // Lógica de Sorteio Personalizado por Dispositivo
   const generateDailyCard = () => {
     const today = new Date();
-    const dateSeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-    const randomIndex = Math.floor((dateSeed * 9301 + 49297) % 233280) % tarotCards.length;
+    const datePart = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    
+    // Cria um ID único baseado nas características do navegador/dispositivo
+    const userFingerprint = 
+      (navigator.userAgent.length) + 
+      (screen.height * screen.width) + 
+      (navigator.language.length);
+
+    // Soma a data com o ID do dispositivo para o sorteio ser único para aquela pessoa
+    const combinedSeed = datePart + userFingerprint;
+    
+    const randomIndex = Math.floor((combinedSeed * 9301 + 49297) % 233280) % tarotCards.length;
     return tarotCards[randomIndex];
   };
 
@@ -75,7 +86,6 @@ export default function DailyCard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-950 via-violet-900 to-purple-950 py-8 px-4">
       <div className="container mx-auto max-w-4xl">
-        {/* Botão Voltar Superior */}
         <button 
           onClick={() => navigate('/')}
           className="flex items-center text-purple-200 hover:text-white mb-8 p-2 rounded-lg hover:bg-white/10 transition-all"
@@ -96,7 +106,7 @@ export default function DailyCard() {
             Carta do Dia
           </h1>
           <p className="text-purple-200 text-lg">
-            Sua orientação espiritual para as próximas 24 horas
+            Sua orientação espiritual única para hoje
           </p>
         </motion.div>
 
@@ -108,14 +118,14 @@ export default function DailyCard() {
           >
             <div className="flex items-center justify-center gap-3 mb-2">
               <Lock className="w-5 h-5 text-amber-400" />
-              <h3 className="text-xl font-bold text-amber-400">Energia Consolidada</h3>
+              <h3 className="text-xl font-bold text-amber-400">Energia Revelada</h3>
             </div>
             <p className="text-purple-200 text-sm mb-4 italic">
-              Você já despertou a mensagem para hoje ({lastReadingDate}).
+              Esta é sua mensagem pessoal para hoje ({lastReadingDate}).
             </p>
             <div className="inline-flex items-center gap-2 bg-black/40 px-4 py-2 rounded-full">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <span className="text-amber-300 font-bold text-sm">Nova carta em: {getNextAvailableTime()}</span>
+              <span className="text-amber-300 font-bold text-sm">Nova energia em: {getNextAvailableTime()}</span>
             </div>
           </motion.div>
         )}
@@ -148,77 +158,46 @@ export default function DailyCard() {
                   </h3>
                   <div className="flex items-center gap-2 text-amber-400">
                     <Sun className="w-4 h-4" />
-                    <p className="text-purple-200 text-sm">Guia Diário</p>
+                    <p className="text-purple-200 text-sm">Guia Pessoal</p>
                   </div>
                 </div>
                 <div className="absolute -top-3 -right-3 bg-amber-400 text-purple-900 px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                  ✨ Ativa
+                  ✨ Sua Carta
                 </div>
               </div>
             </div>
 
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-purple-400/30">
-              <h2 className="text-2xl font-bold text-amber-400 mb-6 flex items-center gap-2">
-                <Sparkles className="w-6 h-6" /> Conselho do Dia
+              <h2 className="text-2xl font-bold text-amber-400 mb-6 flex items-center gap-2 text-center justify-center">
+                <Sparkles className="w-6 h-6" /> Sua Orientação
               </h2>
               
               <div className="space-y-8">
                 <div>
-                  <p className="text-purple-100 text-lg leading-relaxed">
-                    A energia de <strong>{selectedCard.name}</strong> sugere um foco em {selectedCard.meaning}. 
-                    Hoje, o universo pede que você observe os sinais ao seu redor com mais atenção. 
-                    Há uma sabedoria mais profunda tentando se comunicar, mas uma única carta revela apenas a superfície do que está por vir...
+                  <p className="text-purple-100 text-lg leading-relaxed text-center">
+                    A energia de <strong>{selectedCard.name}</strong> foca em {selectedCard.meaning}. 
+                    Neste momento, o universo envia essa vibração especificamente para o seu caminho. 
+                    No entanto, as influências que moldam seu destino são profundas, e uma única carta mostra apenas o início da jornada...
                   </p>
                 </div>
 
                 <div className="bg-purple-950/60 rounded-2xl p-6 border border-amber-400/40 text-center space-y-4">
                   <p className="text-amber-200 font-medium italic">
-                    "Para entender como essa energia afeta seu passado, presente e futuro próximo, você precisa de uma visão completa."
+                    "Deseja ver como essa energia interage com seu passado e futuro?"
                   </p>
                   
-                  {/* BOTÃO CORRIGIDO PARA VOLTAR À HOME */}
                   <button 
                     onClick={() => navigate('/')}
                     className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-purple-900 font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105 shadow-lg"
                   >
                     <LayoutGrid className="w-5 h-5" />
-                    Fazer Jogo de 3 Cartas Agora
+                    Fazer Jogo de 3 Cartas
                   </button>
-                  
-                  <p className="text-purple-300 text-xs">
-                    * Recomendado para decisões importantes e clareza profunda.
-                  </p>
                 </div>
               </div>
             </div>
           </motion.div>
         )}
-
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="mt-16 text-center"
-        >
-          <div className="relative bg-gradient-to-br from-amber-500/10 via-purple-900/40 to-violet-900/40 backdrop-blur-md border border-white/10 rounded-3xl p-10 max-w-3xl mx-auto shadow-2xl">
-            <h3 className="text-2xl font-bold text-amber-400 mb-4">
-              Precisa de uma orientação específica?
-            </h3>
-            <p className="text-purple-200 mb-8">
-              Nossos especialistas estão disponíveis para consultas personalizadas via vídeo chamada.
-            </p>
-            
-            <a 
-              href="https://wa.me/5512996764694?text=Gostaria%20de%20saber%20mais%20sobre%20a%20consulta%20particular%20por%20video%20chamada"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-4 rounded-full transition-all shadow-xl hover:scale-105"
-            >
-              <span className="text-xl">💬</span>
-              Agendar com Especialista
-            </a>
-          </div>
-        </motion.div>
       </div>
     </div>
   );
